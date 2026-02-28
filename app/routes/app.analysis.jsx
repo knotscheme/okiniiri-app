@@ -170,16 +170,17 @@ export const loader = async ({ request }) => {
     if (!referrer) return txt.direct;
     const ref = referrer.toLowerCase();
     
-    // 🌟 LINE判定：URLの中に "line" という文字がどこかにあれば LINE
+    // 🌟 判定ロジックを「含むか（includes）」に変更
+    // これにより、どんなに長いURLでもキーワードを拾えます
     if (ref.includes('line')) return 'LINE';
     
-    // 🌟 Instagram判定：URLの中に "ig" や "instagram" があれば Instagram
+    // インスタ（ig または instagram）
     if (ref.includes('ig') || ref.includes('instagram')) return 'Instagram';
     
-    // Facebook判定
+    // Facebook
     if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
     
-    // 検索エンジン判定
+    // Googleなど
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
     
