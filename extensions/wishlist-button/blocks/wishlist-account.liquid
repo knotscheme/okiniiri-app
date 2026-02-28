@@ -1,19 +1,10 @@
 {%- comment -%} 
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
-  ★統合修正: 
-    1. 3段構えの自動翻訳 (完全版)
-    2. 不要なデバッグ表示の削除
-    3. 重複コードの整理
+  ★統合修正版: 3段構え翻訳維持 + 爆速トースト通知追加
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
-{%- comment -%} 
-  ★最強の3段構え言語判定ロジック 
-  1. アプリ管理画面の設定
-  2. ストアの表示言語
-  3. デフォルト (日本語)
-{%- endcomment -%}
 {%- assign store_lang = request.locale.iso_code | slice: 0, 2 -%}
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
@@ -29,6 +20,8 @@
     {%- assign lang_remove_tooltip = 'Remove' -%}
     {%- assign lang_notify = 'Notify Me' -%}
     {%- assign lang_subscribed = 'Notification Set' -%}
+    {%- assign lang_success_reg = 'Notification Registered!' -%}
+    {%- assign lang_success_del = 'Notification Removed' -%}
     {%- assign lang_email_label = 'Enter email for restock alerts' -%}
     {%- assign lang_email_placeholder = 'example@email.com' -%}
     {%- assign lang_submit = 'Register' -%}
@@ -44,6 +37,8 @@
     {%- assign lang_remove_tooltip = '刪除' -%}
     {%- assign lang_notify = '到貨通知我' -%}
     {%- assign lang_subscribed = '已訂閱通知' -%}
+    {%- assign lang_success_reg = '已成功訂閱通知！' -%}
+    {%- assign lang_success_del = '已取消通知訂閱' -%}
     {%- assign lang_email_label = '輸入接收通知的電子郵件' -%}
     {%- assign lang_email_placeholder = 'example@email.com' -%}
     {%- assign lang_submit = '提交' -%}
@@ -56,6 +51,8 @@
     {%- assign lang_sold_out = 'Épuisé' -%}
     {%- assign lang_notify = 'M’informer' -%}
     {%- assign lang_subscribed = 'Notification activée' -%}
+    {%- assign lang_success_reg = 'Notification activée !' -%}
+    {%- assign lang_success_del = 'Notification annulée' -%}
     {%- assign lang_submit = 'S’inscrire' -%}
     {%- assign lang_close = 'Fermer' -%}
   {%- when 'de' -%}
@@ -65,6 +62,8 @@
     {%- assign lang_sold_out = 'Ausverkauft' -%}
     {%- assign lang_notify = 'Benachrichtigen' -%}
     {%- assign lang_subscribed = 'Benachrichtigung aktiv' -%}
+    {%- assign lang_success_reg = 'Benachrichtigung aktiviert!' -%}
+    {%- assign lang_success_del = 'Benachrichtigung entfernt' -%}
     {%- assign lang_submit = 'Registrieren' -%}
     {%- assign lang_close = 'Schließen' -%}
   {%- when 'es' -%}
@@ -74,10 +73,11 @@
     {%- assign lang_sold_out = 'Agotado' -%}
     {%- assign lang_notify = 'Avisarme' -%}
     {%- assign lang_subscribed = 'Notificación activa' -%}
+    {%- assign lang_success_reg = '¡Notificación activada!' -%}
+    {%- assign lang_success_del = 'Notificación cancelada' -%}
     {%- assign lang_submit = 'Registrar' -%}
     {%- assign lang_close = 'Cerrar' -%}
   {%- else -%}
-    {%- comment -%} 日本語: カスタマイズ設定を反映 {%- endcomment -%}
     {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
     {%- assign lang_desc = block.settings.text_desc | default: 'あなたが保存した商品の一覧です' -%}
     {%- assign lang_empty = 'お気に入りはまだありません' -%}
@@ -87,21 +87,14 @@
     {%- assign lang_remove_tooltip = '削除する' -%}
     {%- assign lang_notify = '入荷通知を受け取る' -%}
     {%- assign lang_subscribed = '入荷通知登録済み' -%}
+    {%- assign lang_success_reg = '入荷通知を登録しました！' -%}
+    {%- assign lang_success_del = '通知登録を解除しました' -%}
     {%- assign lang_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
     {%- assign lang_email_placeholder = 'example@email.com' -%}
     {%- assign lang_submit = '登録する' -%}
     {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
     {%- assign lang_close = '閉じる' -%}
 {%- endcase -%}
-
-{%- comment -%} 各種フォールバック設定 {%- endcomment -%}
-{%- assign lang_loading = lang_loading | default: 'Loading...' -%}
-{%- assign lang_remove_confirm = lang_remove_confirm | default: 'Remove?' -%}
-{%- assign lang_remove_tooltip = lang_remove_tooltip | default: 'Remove' -%}
-{%- assign lang_email_label = lang_email_label | default: 'Enter email' -%}
-{%- assign lang_email_placeholder = lang_email_placeholder | default: 'email@example.com' -%}
-{%- assign lang_email_error = lang_email_error | default: 'Invalid email.' -%}
-{%- assign lang_close = lang_close | default: 'Close' -%}
 
 <div class="wishlist-modern-container wishlist-container-{{ block.id }}">
   <header class="wishlist-header">
@@ -110,11 +103,13 @@
       <p>{{ lang_desc | escape }}</p>
     </div>
   </header>
-
   <div id="wishlist-items" class="wishlist-grid-list">
     <p id="wishlist-loading-msg" class="loading-msg">{{ lang_loading }}</p>
   </div>
 </div>
+
+{%- comment -%} 通知用トースト（ミニモダール） {%- endcomment -%}
+<div id="wishflow-toast" class="wf-toast-hidden"></div>
 
 <style>
   .wishlist-container-{{ block.id }} {
@@ -128,8 +123,6 @@
     --desc-color: {{ block.settings.desc_color }};
     --text-size-name: {{ block.settings.custom_name_text_size }}px;
     --text-size-price: {{ block.settings.custom_price_text_size }}px;
-    --modal-btn-bg: #121212;
-    --modal-btn-text: #ffffff;
   }
   .wishlist-container-{{ block.id }} .wishlist-header { text-align: var(--header-align); margin-bottom: 30px; }
   .wishlist-container-{{ block.id }} .wishlist-title { font-size: var(--title-size); font-weight: var(--title-weight); color: var(--title-color); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0; margin-bottom: 10px; }
@@ -139,16 +132,21 @@
   .wishlist-item { position: relative; display: flex; flex-direction: column; text-align: center; }
   .item-image-link { position: relative; display: block; aspect-ratio: 1/1; background: #f9f9f9; margin-bottom: 12px; overflow: hidden; border: 1px solid #eee; }
   .item-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
-  .item-image-link:hover .item-image { transform: scale(1.05); }
   .sold-out-badge { position: absolute; bottom: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: #fff; padding: 4px 8px; font-size: 10px; font-weight: bold; }
   .wishlist-container-{{ block.id }} .item-name { font-size: var(--text-size-name); text-decoration: none; color: inherit; font-weight: bold; margin-bottom: 4px; display: block; line-height: 1.4; }
   .wishlist-container-{{ block.id }} .item-price { font-size: var(--text-size-price); color: #666; }
   .remove-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.9); border: 1px solid #ddd; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.2s; color: #666; }
-  .remove-btn:hover { background: #ffeded; color: #d72c0d; border-color: #d72c0d; }
-  .loading-msg { grid-column: 1 / -1; text-align: center; padding: 50px; color: #999; }
   .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-  .notify-btn-small:hover { background: #fff5f5; }
   .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
+
+  /* トーストのデザイン */
+  #wishflow-toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: #121212; color: #fff; padding: 12px 24px; border-radius: 30px;
+    font-size: 14px; font-weight: bold; z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s ease; opacity: 1;
+  }
+  .wf-toast-hidden { opacity: 0 !important; bottom: 10px !important; pointer-events: none; }
 </style>
 
 <script>
@@ -163,14 +161,21 @@
     function setGuestList(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
     function getNotifyList() { try { return JSON.parse(localStorage.getItem(NOTIFY_STORAGE_KEY)) || []; } catch (e) { return []; } }
 
+    // トースト表示関数
+    function showToast(message) {
+      const toast = document.getElementById('wishflow-toast');
+      toast.textContent = message;
+      toast.classList.remove('wf-toast-hidden');
+      setTimeout(() => { toast.classList.add('wf-toast-hidden'); }, 3000);
+    }
+
     async function init() {
       if ({{ request.design_mode | json }}) { LOADING_MSG.innerText = "Preview Mode"; return; }
 
       let wishlist = [];
       const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
       if (metaRaw) { try { wishlist = [...wishlist, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))]; } catch(e){} }
-      wishlist = [...wishlist, ...getGuestList()];
-      wishlist = [...new Set(wishlist)].filter(h => h);
+      wishlist = [...new Set([...wishlist, ...getGuestList()])].filter(h => h);
 
       if (wishlist.length === 0) { LOADING_MSG.innerText = "{{ lang_empty }}"; return; }
 
@@ -218,17 +223,12 @@
       if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
     }
 
-    // --- 削除機能 ---
     window.removeWish = async function(handle) {
       if (!confirm("{{ lang_remove_confirm }}")) return;
       const el = document.getElementById(`item-${handle}`);
       if (el) el.remove();
-      if (document.querySelectorAll('.wishlist-item').length === 0) CONTAINER.innerHTML = `<p class="loading-msg">{{ lang_empty }}</p>`;
-
-      let list = getGuestList();
-      list = list.filter(h => h !== handle);
+      let list = getGuestList().filter(h => h !== handle);
       setGuestList(list);
-
       if (CUSTOMER_ID) {
         try {
           const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
@@ -240,7 +240,6 @@
       }
     };
 
-    // --- 通知機能 ---
     window.requestNotifyFromList = async function(handle, variantId) {
       let email = "{{ customer.email }}" || localStorage.getItem('wishflow_guest_email');
       if (!email) { showEmailModal((inputEmail) => sendNotifyRequestList(handle, variantId, inputEmail)); } 
@@ -250,11 +249,11 @@
     async function sendNotifyRequestList(handle, variantId, email) {
       const btn = document.getElementById(`list-notify-${handle}`);
       const isRegistered = btn.classList.contains('registered');
+      const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
       try {
-        const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
         const res = await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href }) 
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create' }) 
         });
         if (res.ok) {
           let list = getNotifyList();
@@ -262,9 +261,11 @@
           if (isRegistered) {
             list = list.filter(i => i !== storageKey && i !== handle);
             btn.textContent = "{{ lang_notify }}"; btn.classList.remove('registered');
+            showToast("{{ lang_success_del }}"); // 🌟 多言語対応メッセージ
           } else {
             if (!list.includes(storageKey)) list.push(storageKey);
             btn.textContent = "{{ lang_subscribed }}"; btn.classList.add('registered');
+            showToast("{{ lang_success_reg }}"); // 🌟 多言語対応メッセージ
           }
           localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
         }
@@ -301,18 +302,12 @@
     }
 
     document.addEventListener("DOMContentLoaded", init);
-    window.addEventListener('wishflow:updated', (e) => {
-      // リストページを開いたまま、別タブ等で更新されたらリストを再描画する
-      init(); 
-    });
+    window.addEventListener('wishflow:updated', init);
   })();
 </script>
 
 {% schema %}
-{ 
-  "name": "t:account.name", 
-  "target": "section", 
-  "settings": [
+{ "name": "t:account.name", "target": "section", "settings": [
     { "type": "header", "content": "t:account.header_text" },
     { "type": "text", "id": "text_title", "label": "t:account.title", "default": "お気に入りリスト" },
     { "type": "text", "id": "text_desc", "label": "t:account.desc", "default": "あなたが保存した商品の一覧です" },
