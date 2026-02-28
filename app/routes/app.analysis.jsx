@@ -25,25 +25,22 @@ export const loader = async ({ request }) => {
   const url = new URL(request.url);
   
   // ==========================================
-  // ★追加: 入館チェック（権限チェック）
+  // 入館チェック（権限チェック）
   // ==========================================
   let appUsage = await db.appUsage.findUnique({ where: { shop } });
   if (!appUsage) {
     appUsage = await db.appUsage.create({ data: { shop } });
   }
 
-  // Founderでもなく、Proプランでもない場合は料金ページへ強制送還
   const isProUnlocked = appUsage.isFounder || appUsage.plan === "pro";
   if (!isProUnlocked) {
     return redirect("/app/pricing");
   }
-  // ==========================================
 
   // 言語設定取得
   const settings = await db.emailSetting.findUnique({ where: { shop } });
   const lang = settings?.language || 'en';
 
-  // ★元々の翻訳辞書（6カ国語）を一文字も削らず維持
   const dict = {
     ja: { notified: "通知済み", pending: "未通知", purchased: "購入済み", not_purchased: "未購入", direct: "直接流入 / 不明", organic: "オーガニック検索", other: "その他", none: "指定なし" },
     en: { notified: "Notified", pending: "Pending", purchased: "Purchased", not_purchased: "Not Purchased", direct: "Direct / Unknown", organic: "Organic Search", other: "Others", none: "None" },
@@ -106,7 +103,6 @@ export const loader = async ({ request }) => {
   const totalConversions = restockRaw.filter(r => r.isConverted).length;
   const conversionRate = totalRestocks > 0 ? ((totalConversions / totalRestocks) * 100).toFixed(1) : "0.0";
   
-  // 基本サマリーの定義
   let summary = { totalFavs, totalRestocks, totalConversions, conversionRate };
 
   const allHandles = Array.from(new Set([...favRaw.map(s => s.productHandle), ...restockRaw.map(s => s.productHandle)]));
@@ -167,6 +163,7 @@ export const loader = async ({ request }) => {
     } catch (e) { permissionError = true; }
   }
 
+  // 🌟 ここに全プラットフォームの判定が集結
   const getSourceCategory = (referrer) => {
     if (!referrer) return txt.direct;
     const ref = referrer.toLowerCase();
@@ -177,6 +174,7 @@ export const loader = async ({ request }) => {
     if (ref.includes('pinterest') || ref.includes('pin.it')) return 'Pinterest';
     if (ref.includes('tiktok')) return 'TikTok';
     if (ref.includes('youtube') || ref.includes('youtu.be')) return 'YouTube';
+    
     if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
@@ -250,17 +248,15 @@ export const loader = async ({ request }) => {
   const sourceData = Object.values(sourceMap).map(s => ({ name: s.name, total: s.total, unique: s.uniqueUsers.size, favs: s.favs, restocks: s.restocks, conversions: s.conversions })).sort((a, b) => b.total - a.total);
 
   // ==========================================
-  // ★追加: 下段4枚のカード用 KPI計算（見込売上版）
+  // 下段4枚のカード用 KPI計算（見込売上版）
   // ==========================================
   const totalUniqueUsers = new Set(rawDetailedData.map(d => d.userId || d.userEmail).filter(Boolean)).size;
   const totalRevenue = restockRaw.filter(r => r.isConverted).reduce((sum, r) => sum + (parseFloat(r.convertedPrice) || 0), 0);
   const aov = totalConversions > 0 ? Math.round(totalRevenue / totalConversions) : 0;
   
-  // 🌟 新規計算：見込売上（未購入の入荷待ち人数 × 平均客単価）
   const pendingRestocks = totalRestocks - totalConversions;
   const potentialRevenue = pendingRestocks * aov;
   
-  // 計算結果をサマリーに追加
   summary = { ...summary, totalUniqueUsers, totalRevenue, aov, potentialRevenue };
 
   const groupStats = (items, type) => {
@@ -292,13 +288,14 @@ export default function AnalysisPage() {
   const [currentPeriod, setCurrentPeriod] = useState(period);
   useEffect(() => { setCurrentPeriod(period); }, [period]);
 
+  // 🌟 全SNSのカラー設定
   const SOURCE_COLORS = { 
     'Instagram': '#E1306C', 
     'LINE': '#00C300', 
     'X (Twitter)': '#000000',
     'Pinterest': '#E60023',
-    'TikTok': '#2c2c2c',   // 🌟 ここにTikTokを追加！
-    'YouTube': '#FF0000',  // 🌟 ここにYouTubeを追加！
+    'TikTok': '#FE2C55',
+    'YouTube': '#FF0000',
     'Google': '#4285F4', 
     'Facebook': '#1877F2', 
     'オーガニック検索': '#FBC02D', 'Organic Search': '#FBC02D', '自然搜尋': '#FBC02D', 'Recherche organique': '#FBC02D', 'Organische Suche': '#FBC02D', 'Búsqueda orgánica': '#FBC02D',
@@ -306,7 +303,6 @@ export default function AnalysisPage() {
     'その他': '#8A8D91', 'Others': '#8A8D91', '其他': '#8A8D91', 'Autres': '#8A8D91', 'Andere': '#8A8D91', 'Otros': '#8A8D91' 
   };
 
-  // ★翻訳辞書：kpi_top_sourceを kpi_potential_rev(見込売上) に変更
   const t = {
     ja: {
       title: "統合分析ダッシュボード",
@@ -593,65 +589,53 @@ export default function AnalysisPage() {
 
         <div style={{ opacity: isLoading ? 0.5 : 1, transition: "opacity 0.2s" }}>
           <Layout>
+            {/* 1. 期間選択 ＆ CSVエクスポート */}
             <Layout.Section>
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack gap="200" align="start" blockAlign="center" wrap={false}>
-                    <div style={{ width: 20, height: 20 }}><Icon source={LinkIcon} tone="base" /></div>
-                    <Text variant="headingMd" as="h2">{text.tab_source}</Text>
-                  </InlineStack>
-                  <Divider />
-                  
-                  {/* alignItemsをstartにして、表が長くなっても上揃えにする */}
-                  <InlineGrid columns={{xs: 1, md: 2}} gap="600" alignItems="start"> 
-                    <Box>
-                      {sourceData.length > 0 ? (
-                        (() => {
-                          // 🌟 円グラフが潰れないように「Top 5 ＋ その他」に自動整形
-                          const MAX_SLICES = 5;
-                          let pieData = sourceData;
-                          if (sourceData.length > MAX_SLICES) {
-                            const top = sourceData.slice(0, MAX_SLICES);
-                            const restTotal = sourceData.slice(MAX_SLICES).reduce((sum, item) => sum + item.total, 0);
-                            pieData = [...top, { name: 'その他 (少数流入)', total: restTotal }];
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="400" blockAlign="center">
+                      <Select 
+                        label={text.period_label} 
+                        labelHidden
+                        options={[{label: text.p_7, value: '7'}, {label: text.p_30, value: '30'}, {label: text.p_all, value: 'all'}, {label: text.p_custom, value: 'custom'}]} 
+                        onChange={handlePeriodChange} 
+                        value={currentPeriod} 
+                        disabled={isLoading} 
+                      />
+                      {currentPeriod === 'custom' && (
+                        <Popover
+                          active={popoverActive}
+                          activator={
+                            <Button onClick={togglePopover} icon={CalendarIcon} disabled={isLoading}>
+                              {startParam ? `${startParam} 〜 ${endParam}` : text.btn_date}
+                            </Button>
                           }
-                          return (
-                            <ResponsiveContainer width="100%" height={280}>
-                              <PieChart>
-                                <Pie data={pieData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                                  {/* SOURCE_COLORSにない名前(新規の少数流入など)はグレーを割り当て */}
-                                  {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.name] || '#B9B9B9'} />)}
-                                </Pie>
-                                <Tooltip />
-                                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          );
-                        })()
-                      ) : <Box padding="500"><Text tone="subdued" alignment="center">{text.empty_data}</Text></Box>}
-                    </Box>
-                    <Box>
-                      {/* 🌟 表が伸びないようにスクロール領域(maxHeight)で囲む */}
-                      <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #ebebeb', borderRadius: '8px' }}>
-                        <DataTable
-                          columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric']}
-                          headings={[text.source_name, text.source_total, text.source_fav, text.source_restock, text.source_cv]}
-                          rows={sourceData.map(s => [<Badge tone="info">{s.name}</Badge>, <Text fontWeight="bold">{s.total}</Text>, s.favs, s.restocks, <Text tone="success" fontWeight="bold">{s.conversions}</Text>])}
-                        />
-                      </div>
-                    </Box>
-                  </InlineGrid>
+                          onClose={togglePopover}
+                        >
+                          <Box padding="400">
+                            <BlockStack gap="400">
+                              <DatePicker month={month} year={year} onChange={handleDateSelection} onMonthChange={handleMonthChange} selected={selectedDates} allowRange />
+                              <InlineStack align="end"><Button variant="primary" onClick={applyCustomDate}>{text.btn_apply}</Button></InlineStack>
+                            </BlockStack>
+                          </Box>
+                        </Popover>
+                      )}
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text tone="subdued" variant="bodySm">{text.display}: {getDateRangeLabel()}</Text>
+                        {isLoading && <Spinner size="small" />}
+                      </InlineStack>
+                    </InlineStack>
+                    <Button icon={ExportIcon} onClick={toggleModal} disabled={isLoading}>{text.btn_export}</Button>
+                  </InlineStack>
                 </BlockStack>
               </Card>
             </Layout.Section>
 
-            {/* ========================================== */}
-            {/* ★修正: 8枚のカードを表示するセクション       */}
-            {/* ========================================== */}
+            {/* 2. KPIカード（8枚） */}
             <Layout.Section>
                <InlineGrid columns={{xs: 1, sm: 2, md: 4}} gap="400">
                  
-                 {/* 1段目: 基本の4枚 */}
                  <Card>
                    <BlockStack gap="200">
                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
@@ -689,7 +673,6 @@ export default function AnalysisPage() {
                    </BlockStack>
                  </Card>
 
-                 {/* 2段目: マーケティング用の深掘り4枚 */}
                  <Card>
                    <BlockStack gap="200">
                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
@@ -730,6 +713,7 @@ export default function AnalysisPage() {
                </InlineGrid>
             </Layout.Section>
 
+            {/* CSV Modal */}
             <Modal
               open={activeModal}
               onClose={toggleModal}
@@ -757,6 +741,7 @@ export default function AnalysisPage() {
               </Modal.Section>
             </Modal>
 
+            {/* 3. 流入元（リファラー）分析：スクロール＆Top5仕様 */}
             <Layout.Section>
               <Card>
                 <BlockStack gap="400">
@@ -765,31 +750,47 @@ export default function AnalysisPage() {
                     <Text variant="headingMd" as="h2">{text.tab_source}</Text>
                   </InlineStack>
                   <Divider />
-                  <InlineGrid columns={{xs: 1, md: 2}} gap="600" alignItems="center">
+                  
+                  <InlineGrid columns={{xs: 1, md: 2}} gap="600" alignItems="start"> 
                     <Box>
                       {sourceData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={250}>
-                          <PieChart>
-                            <Pie data={sourceData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                              {sourceData.map((entry, index) => <Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.name] || SOURCE_COLORS['その他']} />)}
-                            </Pie>
-                            <Tooltip /><Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        (() => {
+                          const MAX_SLICES = 5;
+                          let pieData = sourceData;
+                          if (sourceData.length > MAX_SLICES) {
+                            const top = sourceData.slice(0, MAX_SLICES);
+                            const restTotal = sourceData.slice(MAX_SLICES).reduce((sum, item) => sum + item.total, 0);
+                            pieData = [...top, { name: 'その他 (少数流入)', total: restTotal }];
+                          }
+                          return (
+                            <ResponsiveContainer width="100%" height={280}>
+                              <PieChart>
+                                <Pie data={pieData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                                  {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.name] || '#B9B9B9'} />)}
+                                </Pie>
+                                <Tooltip />
+                                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        })()
                       ) : <Box padding="500"><Text tone="subdued" alignment="center">{text.empty_data}</Text></Box>}
                     </Box>
                     <Box>
-                      <DataTable
-                        columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric']}
-                        headings={[text.source_name, text.source_total, text.source_fav, text.source_restock, text.source_cv]}
-                        rows={sourceData.map(s => [<Badge tone="info">{s.name}</Badge>, <Text fontWeight="bold">{s.total}</Text>, s.favs, s.restocks, <Text tone="success" fontWeight="bold">{s.conversions}</Text>])}
-                      />
+                      <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #ebebeb', borderRadius: '8px' }}>
+                        <DataTable
+                          columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric']}
+                          headings={[text.source_name, text.source_total, text.source_fav, text.source_restock, text.source_cv]}
+                          rows={sourceData.map(s => [<Badge tone="info">{s.name}</Badge>, <Text fontWeight="bold">{s.total}</Text>, s.favs, s.restocks, <Text tone="success" fontWeight="bold">{s.conversions}</Text>])}
+                        />
+                      </div>
                     </Box>
                   </InlineGrid>
                 </BlockStack>
               </Card>
             </Layout.Section>
 
+            {/* 4. 需要と成果のトレンド */}
             <Layout.Section>
               <Card>
                 <BlockStack gap="400">
@@ -806,11 +807,11 @@ export default function AnalysisPage() {
               </Card>
             </Layout.Section>
 
+            {/* 5. お気に入り TOP 5 */}
             <Layout.Section variant="oneHalf">
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2" tone="success">{text.ranking_fav}</Text>
-                  
                   <BlockStack gap="0">
                     <Box paddingBlockEnd="200">
                       <InlineGrid columns="1fr auto" gap="400">
@@ -819,7 +820,6 @@ export default function AnalysisPage() {
                       </InlineGrid>
                     </Box>
                     <Divider />
-
                     {favData.map((item, i) => (
                       <div key={i}>
                         <Box paddingBlockStart="300" paddingBlockEnd="300">
@@ -842,11 +842,11 @@ export default function AnalysisPage() {
               </Card>
             </Layout.Section>
 
+            {/* 6. 再入荷通知 TOP 5 */}
             <Layout.Section variant="oneHalf">
               <Card>
                 <BlockStack gap="400">
                   <Text variant="headingMd" as="h2" tone="critical">{text.ranking_restock}</Text>
-                  
                   <BlockStack gap="0">
                     <Box paddingBlockEnd="200">
                       <InlineGrid columns="1fr auto" gap="400">
@@ -855,7 +855,6 @@ export default function AnalysisPage() {
                       </InlineGrid>
                     </Box>
                     <Divider />
-
                     {restockData.map((item, i) => (
                       <div key={i}>
                         <Box paddingBlockStart="300" paddingBlockEnd="300">
