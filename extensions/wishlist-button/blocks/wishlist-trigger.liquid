@@ -1,8 +1,6 @@
 {%- comment -%} 
   商品ページ用: お気に入り＆通知ボタン (wishlist-trigger.liquid)
-  ★修正ポイント: 
-    既存のブロックに保存されている「古い日本語デフォルト値」を検出し、
-    アプリ設定の言語（中国語など）が選ばれている場合は、その日本語を無視して翻訳を適用するロジックを追加。
+  ★統合版: 多言語スマート判定維持 ＋ 爆速トースト通知 ＋ 楽観的UI
 {%- endcomment -%}
 
 {%- comment -%} --- 言語設定の取得 --- {%- endcomment -%}
@@ -10,7 +8,7 @@
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- comment -%} --- 判定用：デフォルト値の定義 (英語と日本語) --- {%- endcomment -%}
+{%- comment -%} --- 判定用：デフォルト値の定義 --- {%- endcomment -%}
 {%- assign def_add_en = 'Add to Wishlist' -%}
 {%- assign def_add_ja = 'お気に入りに追加' -%}
 {%- assign def_added_en = 'In Wishlist' -%}
@@ -22,13 +20,7 @@
 {%- assign def_submit_en = 'Register' -%}
 {%- assign def_submit_ja = '登録する' -%}
 
-{%- comment -%} 
-  ★スマート判定ロジック
-  入力欄の値が「空」または「英語デフォルト」または「古い日本語デフォルト」の場合、
-  「デフォルト状態」とみなしてアプリ設定の言語を優先適用する。
-  それ以外（ユーザーが独自に書き換えた場合）は、その入力値を優先する。
-{%- endcomment -%}
-
+{%- comment -%} スマート判定ロジック {%- endcomment -%}
 {%- assign val_add = block.settings.text_add -%}
 {%- if val_add == blank or val_add == def_add_en or val_add == def_add_ja -%}
   {%- assign use_translation = true -%}
@@ -93,7 +85,6 @@
       {%- assign text_success_removed = 'Eliminado' -%}
       {%- assign text_error_email = 'Email inválido' -%}
     {%- else -%}
-      {%- comment -%} 日本語フォールバック {%- endcomment -%}
       {%- assign text_add = 'お気に入りに追加' -%}
       {%- assign text_added = '追加済み' -%}
       {%- assign text_notify = '入荷通知を受け取る' -%}
@@ -107,7 +98,6 @@
       {%- assign text_error_email = '正しいメールアドレスを入力してください' -%}
   {%- endcase -%}
 {%- else -%}
-  {%- comment -%} ユーザーが独自に入力したテキストを優先使用 {%- endcomment -%}
   {%- assign text_add = block.settings.text_add -%}
   {%- assign text_added = block.settings.text_added -%}
   {%- assign text_notify = block.settings.text_notify -%}
@@ -121,7 +111,6 @@
   {%- assign text_error_email = 'Invalid email' -%}
 {%- endif -%}
 
-{%- comment -%} ★透明度の計算ロジック維持 {%- endcomment -%}
 {%- assign modal_bg_color = block.settings.modal_bg_color | default: '#ffffff' -%}
 {%- assign modal_opacity_decimal = block.settings.modal_bg_opacity | default: 85 | divided_by: 100.0 -%}
 {%- assign modal_bg_rgba = modal_bg_color | color_modify: 'alpha', modal_opacity_decimal -%}
@@ -140,6 +129,9 @@
   </button>
   <button id="notify-btn-{{ product.handle }}" class="notify-btn" style="display: none;" onclick="event.stopPropagation(); window.requestNotify('{{ product.handle }}')" type="button">{{ text_notify }}</button>
 </div>
+
+{%- comment -%} ★爆速トースト通知用の受け皿 {%- endcomment -%}
+<div id="wishflow-toast-trigger" class="wf-toast-hidden"></div>
 
 <script type="application/json" id="wishlist-config-{{ block.id }}">
 {
@@ -196,6 +188,17 @@
   .wishlist-email-form { display: flex; flex-direction: column; gap: 12px; width: 100%; text-align: left; }
   .wishlist-email-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: #fff !important; color: #333 !important; }
   .wishlist-email-error { color: #d72c0d; font-size: 12px; display: none; margin-top: 5px; }
+
+  /* ★トーストのデザイン（画面上部） */
+  #wishflow-toast-trigger {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #121212; color: #fff; padding: 15px 30px; border-radius: 8px;
+    font-size: 15px; font-weight: bold; z-index: 2147483647; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    transition: all 0.4s ease; opacity: 1;
+    text-align: center; white-space: nowrap; pointer-events: none;
+  }
+  .wf-toast-hidden { opacity: 0 !important; top: -50px !important; }
 </style>
 
 <script>
@@ -210,27 +213,44 @@
       try { return JSON.parse(el.textContent); } catch (e) { return {}; }
     }
 
+    // ★トースト表示用関数
+    function showToast(message) {
+      const toast = document.getElementById('wishflow-toast-trigger');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.remove('wf-toast-hidden');
+      setTimeout(() => { toast.classList.add('wf-toast-hidden'); }, 3000);
+    }
+
+    // 🌟 お気に入りボタンの楽観的UI対応
     window.toggleWishlist = async function(handle) {
       const btn = document.getElementById(`wishlist-btn-${handle}`);
       btn.classList.toggle('active');
       const textSpan = document.getElementById(`wishlist-text-${handle}`);
-      textSpan.textContent = btn.classList.contains('active') ? "{{ text_added }}" : "{{ text_add }}";
+      
+      const isActive = btn.classList.contains('active');
+      textSpan.textContent = isActive ? "{{ text_added }}" : "{{ text_add }}";
 
+      // ゲスト用のローカル保存を先に処理（爆速化）
+      let list = JSON.parse(localStorage.getItem('wishflow_guest_list') || '[]');
+      if (isActive) { if (!list.includes(handle)) list.push(handle); } 
+      else { list = list.filter(h => h !== handle); }
+      localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
+
+      // ログインユーザーの場合は裏でサーバーと同期
       if (CUSTOMER_ID) {
-        const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
-        await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle', referrer: document.referrer })
-        });
-      } else {
-        let list = JSON.parse(localStorage.getItem('wishflow_guest_list') || '[]');
-        if (btn.classList.contains('active')) { if (!list.includes(handle)) list.push(handle); } 
-        else { list = list.filter(h => h !== handle); }
-        localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
+        try {
+          const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+          await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle', referrer: document.referrer })
+          });
+        } catch (e) { console.error("Wishlist sync failed:", e); }
       }
     };
 
-    window.showCustomAlert = function(message, type = 'alert', callback = null) {
+    // ★メール入力用モダール（これは残す）
+    window.showCustomAlert = function(type = 'email_form', callback = null) {
       const existing = document.getElementById('wishlist-custom-alert');
       if (existing) existing.remove();
       const settings = getDesignSettings();
@@ -238,54 +258,60 @@
       const glassEffect = settings.modalGlass ? 'backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);' : '';
       const submitBtnStyle = `background-color: ${settings.submitBg} !important; color: ${settings.submitText} !important; border: ${settings.submitBorderWidth} solid ${settings.submitBorderColor} !important; border-radius: ${settings.submitRadius} !important; width: 100% !important; padding: 12px !important; font-weight: bold !important; cursor: pointer !important; margin-top: 10px !important; display: block !important; box-sizing: border-box !important; font-size: 14px !important;`;
 
-      let contentHtml = '';
-      if (type === 'email_form') {
-        contentHtml = `<div class="wishlist-email-form"><label style="font-weight:bold; margin-bottom:4px; display:block;">${settings.textEmailLabel}</label><input type="email" id="wishlist-guest-email" class="wishlist-email-input" placeholder="${settings.textEmailPlaceholder}"><div id="wishlist-email-error" class="wishlist-email-error"></div><button id="wishlist-email-submit-btn" style="${submitBtnStyle}">${settings.textSubmit}</button><button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:inherit; cursor:pointer; font-size:12px; text-decoration:underline; opacity:0.7;">${settings.textClose}</button></div>`;
-      } else {
-        contentHtml = `<p style="margin: 0 0 20px 0; font-size: 15px; font-weight: bold;">${message}</p><button onclick="document.getElementById('wishlist-custom-alert').remove()" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 4px; border:none; cursor:pointer;">${settings.textClose}</button>`;
-      }
+      let contentHtml = `<div class="wishlist-email-form"><label style="font-weight:bold; margin-bottom:4px; display:block;">${settings.textEmailLabel}</label><input type="email" id="wishlist-guest-email" class="wishlist-email-input" placeholder="${settings.textEmailPlaceholder}"><div id="wishlist-email-error" class="wishlist-email-error"></div><button id="wishlist-email-submit-btn" style="${submitBtnStyle}">${settings.textSubmit}</button><button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:inherit; cursor:pointer; font-size:12px; text-decoration:underline; opacity:0.7;">${settings.textClose}</button></div>`;
+      
       const html = `<div id="wishlist-custom-alert" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 2147483647;"><div style="${bgStyle} ${glassEffect} padding: 24px; border-radius: ${settings.modalRadius}; width: 90%; max-width: 320px; text-align: center; color: ${settings.modalText}; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">${contentHtml}</div></div>`;
       document.body.insertAdjacentHTML('beforeend', html);
 
-      if (type === 'email_form' && callback) {
+      if (callback) {
         document.getElementById('wishlist-email-submit-btn').onclick = function() {
           const email = document.getElementById('wishlist-guest-email').value.trim();
           if (!email || !email.includes('@')) { 
             const errorEl = document.getElementById('wishlist-email-error');
-            errorEl.style.display = 'block'; 
-            errorEl.innerText = settings.textErrorEmail;
-            return; 
+            errorEl.style.display = 'block'; errorEl.innerText = settings.textErrorEmail; return; 
           }
-          localStorage.setItem('wishflow_guest_email', email); callback(email); document.getElementById('wishlist-custom-alert').remove();
+          localStorage.setItem('wishflow_guest_email', email); 
+          callback(email); 
+          document.getElementById('wishlist-custom-alert').remove();
         };
       }
     };
 
+    // 🌟 通知ボタンの入り口
     window.requestNotify = async function(handle) {
       let email = "{{ customer.email }}" || localStorage.getItem('wishflow_guest_email');
-      if (!email) { window.showCustomAlert("", 'email_form', (inputEmail) => sendNotifyRequest(handle, inputEmail)); } else { sendNotifyRequest(handle, email); }
+      if (!email) { 
+        window.showCustomAlert('email_form', (inputEmail) => sendNotifyRequest(handle, inputEmail)); 
+      } else { 
+        sendNotifyRequest(handle, email); 
+      }
     };
 
+    // 🌟 爆速通知ロジック (楽観的UI)
     async function sendNotifyRequest(handle, email) {
       const btn = document.getElementById(`notify-btn-${handle}`);
       const isRegistered = btn.classList.contains('registered');
       const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
-      const res = await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productHandle: handle, variantId: "{{ product.selected_or_first_available_variant.id }}", customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
-      });
-      if (res.ok) {
-        btn.classList.toggle('registered');
-        btn.textContent = btn.classList.contains('registered') ? "{{ text_subscribed }}" : "{{ text_notify }}";
-        window.showCustomAlert(btn.classList.contains('registered') ? "{{ text_success_notified }}" : "{{ text_success_removed }}");
+      const variantId = "{{ product.selected_or_first_available_variant.id }}";
+      const storageKey = `${handle}-${variantId}`;
 
-        const variantId = "{{ product.selected_or_first_available_variant.id }}";
-        const storageKey = `${handle}-${variantId}`;
-        let list = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '[]');
-        if (btn.classList.contains('registered')) { if (!list.includes(storageKey)) list.push(storageKey); } 
-        else { list = list.filter(k => k !== storageKey && k !== handle); }
-        localStorage.setItem(NOTIFY_KEY, JSON.stringify(list));
-      }
+      // 1. 先に見た目とトーストを変える (爆速化)
+      btn.classList.toggle('registered');
+      btn.textContent = btn.classList.contains('registered') ? "{{ text_subscribed }}" : "{{ text_notify }}";
+      showToast(btn.classList.contains('registered') ? "{{ text_success_notified }}" : "{{ text_success_removed }}");
+
+      let list = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '[]');
+      if (btn.classList.contains('registered')) { if (!list.includes(storageKey)) list.push(storageKey); } 
+      else { list = list.filter(k => k !== storageKey && k !== handle); }
+      localStorage.setItem(NOTIFY_KEY, JSON.stringify(list));
+
+      // 2. 裏でこっそりサーバーと通信
+      try {
+        await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
+        });
+      } catch (e) { console.error("Notify sync failed:", e); }
     }
 
     function updateVisibility() {
@@ -308,10 +334,18 @@
         document.getElementById(`wishlist-text-${PRODUCT_HANDLE}`).textContent = "{{ text_added }}";
       }
     }
+    
     document.addEventListener("DOMContentLoaded", updateVisibility);
     window.addEventListener('wishflow:updated', (e) => {
       if (e.detail.handle === PRODUCT_HANDLE) updateVisibility();
     });
+
+    // 🌟 カスタマイズ画面でプレビューを強制表示する魔法
+    {% if request.design_mode and block.settings.show_email_preview %}
+      setTimeout(() => {
+        window.showCustomAlert('email_form');
+      }, 500);
+    {% endif %}
   })();
 </script>
 
