@@ -175,6 +175,8 @@ export const loader = async ({ request }) => {
     if (ref.includes('ig') || ref.includes('instagram')) return 'Instagram';
     if (ref.includes('twitter.com') || ref.includes('t.co') || ref.includes('x.com')) return 'X (Twitter)';
     if (ref.includes('pinterest') || ref.includes('pin.it')) return 'Pinterest';
+    if (ref.includes('tiktok')) return 'TikTok';
+    if (ref.includes('youtube') || ref.includes('youtu.be')) return 'YouTube';
     if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
@@ -295,6 +297,8 @@ export default function AnalysisPage() {
     'LINE': '#00C300', 
     'X (Twitter)': '#000000',
     'Pinterest': '#E60023',
+    'TikTok': '#2c2c2c',   // 🌟 ここにTikTokを追加！
+    'YouTube': '#FF0000',  // 🌟 ここにYouTubeを追加！
     'Google': '#4285F4', 
     'Facebook': '#1877F2', 
     'オーガニック検索': '#FBC02D', 'Organic Search': '#FBC02D', '自然搜尋': '#FBC02D', 'Recherche organique': '#FBC02D', 'Organische Suche': '#FBC02D', 'Búsqueda orgánica': '#FBC02D',
