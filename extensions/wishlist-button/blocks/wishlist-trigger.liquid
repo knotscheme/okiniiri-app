@@ -334,6 +334,12 @@
     {% if request.design_mode and block.settings.show_email_preview %}
       setTimeout(() => { window.showCustomAlert('email_form'); }, 500);
     {% endif %}
+    // 🌟 エディタ画面でのトーストデザイン確認用（1秒後に自動表示）
+    {% if request.design_mode %}
+      setTimeout(() => { 
+        showToast("✓ デザイン確認用のトーストです"); 
+      }, 1000);
+    {% endif %}
 
   })();
 </script>

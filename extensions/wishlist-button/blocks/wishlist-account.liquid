@@ -286,6 +286,12 @@
 
     document.addEventListener("DOMContentLoaded", init);
     window.addEventListener('wishflow:updated', init);
+    // 🌟 エディタ画面でのトーストデザイン確認用（1秒後に自動表示）
+    {% if request.design_mode %}
+      setTimeout(() => { 
+        showToast("✓ デザイン確認用のトーストです"); 
+      }, 1000);
+    {% endif %}
   })();
 </script>
 
