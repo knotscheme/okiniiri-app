@@ -169,6 +169,7 @@
       setTimeout(() => { toast.classList.add('wf-toast-hidden'); }, 3000);
     }
 
+    // --- 1. 初期化ロジック (現状の機能を100%維持) ---
     async function init() {
       if ({{ request.design_mode | json }}) { LOADING_MSG.innerText = "Preview Mode"; return; }
 
@@ -199,7 +200,8 @@
         let notifyBtnHtml = '';
         if (!product.available) {
           badgeHtml = `<span class="sold-out-badge">{{ lang_sold_out }}</span>`;
-          const isRegistered = notifyList.some(key => key.includes(product.handle));
+          // 判定ロジックを強化 (ハンドルか variantId が含まれていれば登録済み)
+          const isRegistered = notifyList.some(key => key.includes(product.handle) || key.includes(product.variants[0].id.toString()));
           const btnText = isRegistered ? "{{ lang_subscribed }}" : "{{ lang_notify }}";
           const btnClass = isRegistered ? "notify-btn-small registered" : "notify-btn-small";
           notifyBtnHtml = `<button class="${btnClass}" id="list-notify-${product.handle}" onclick="window.requestNotifyFromList('${product.handle}', ${product.variants[0].id})">${btnText}</button>`;
@@ -221,6 +223,51 @@
         `;
       }
       if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
+    }
+
+    // --- 2. 通知登録ロジック (ここが爆速・楽観的UI版) ---
+    async function sendNotifyRequestList(handle, variantId, email) {
+      const btn = document.getElementById(`list-notify-${handle}`);
+      if (!btn) return;
+      
+      const isRegistered = btn.classList.contains('registered');
+      const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+
+      // 🌟【改善】通信を待たずに、先にボタンの見た目を変えてモダールを出す！
+      let list = getNotifyList();
+      const storageKey = `${handle}-${variantId}`;
+      
+      if (isRegistered) {
+        // 解除の動き
+        list = list.filter(i => i !== storageKey && i !== handle);
+        btn.textContent = "{{ lang_notify }}"; btn.classList.remove('registered');
+        if (window.showToast) showToast("{{ lang_success_del }}"); 
+      } else {
+        // 登録の動き
+        if (!list.includes(storageKey)) list.push(storageKey);
+        btn.textContent = "{{ lang_subscribed }}"; btn.classList.add('registered');
+        if (window.showToast) showToast("{{ lang_success_reg }}"); // 🌟 押した瞬間に表示！
+      }
+      localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
+
+      // 🌟【改善】その後に裏でこっそりサーバーに伝える
+      try {
+        await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            productHandle: handle, 
+            variantId: variantId, 
+            customerEmail: email, 
+            actionType: isRegistered ? 'delete' : 'create',
+            referrer: window.location.href 
+          })
+        });
+        // 成功しても失敗しても、すでにUIは変わっているのでユーザーはストレスゼロ
+      } catch (e) {
+        console.error("Background sync failed:", e);
+        // 通信に失敗した場合のみ、コンソールに記録を残す（ユーザーには見せない）
+      }
     }
 
     window.removeWish = async function(handle) {
