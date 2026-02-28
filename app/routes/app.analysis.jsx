@@ -174,6 +174,7 @@ export const loader = async ({ request }) => {
     if (ref.includes('line')) return 'LINE';
     if (ref.includes('ig') || ref.includes('instagram')) return 'Instagram';
     if (ref.includes('twitter.com') || ref.includes('t.co') || ref.includes('x.com')) return 'X (Twitter)';
+    if (ref.includes('pinterest') || ref.includes('pin.it')) return 'Pinterest';
     if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
@@ -293,6 +294,7 @@ export default function AnalysisPage() {
     'Instagram': '#E1306C', 
     'LINE': '#00C300', 
     'X (Twitter)': '#000000',
+    'Pinterest': '#E60023',
     'Google': '#4285F4', 
     'Facebook': '#1877F2', 
     'オーガニック検索': '#FBC02D', 'Organic Search': '#FBC02D', '自然搜尋': '#FBC02D', 'Recherche organique': '#FBC02D', 'Organische Suche': '#FBC02D', 'Búsqueda orgánica': '#FBC02D',
@@ -590,41 +592,51 @@ export default function AnalysisPage() {
             <Layout.Section>
               <Card>
                 <BlockStack gap="400">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <InlineStack gap="400" blockAlign="center">
-                      <Select 
-                        label={text.period_label} 
-                        labelHidden
-                        options={[{label: text.p_7, value: '7'}, {label: text.p_30, value: '30'}, {label: text.p_all, value: 'all'}, {label: text.p_custom, value: 'custom'}]} 
-                        onChange={handlePeriodChange} 
-                        value={currentPeriod} 
-                        disabled={isLoading} 
-                      />
-                      {currentPeriod === 'custom' && (
-                        <Popover
-                          active={popoverActive}
-                          activator={
-                            <Button onClick={togglePopover} icon={CalendarIcon} disabled={isLoading}>
-                              {startParam ? `${startParam} 〜 ${endParam}` : text.btn_date}
-                            </Button>
-                          }
-                          onClose={togglePopover}
-                        >
-                          <Box padding="400">
-                            <BlockStack gap="400">
-                              <DatePicker month={month} year={year} onChange={handleDateSelection} onMonthChange={handleMonthChange} selected={selectedDates} allowRange />
-                              <InlineStack align="end"><Button variant="primary" onClick={applyCustomDate}>{text.btn_apply}</Button></InlineStack>
-                            </BlockStack>
-                          </Box>
-                        </Popover>
-                      )}
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text tone="subdued" variant="bodySm">{text.display}: {getDateRangeLabel()}</Text>
-                        {isLoading && <Spinner size="small" />}
-                      </InlineStack>
-                    </InlineStack>
-                    <Button icon={ExportIcon} onClick={toggleModal} disabled={isLoading}>{text.btn_export}</Button>
+                  <InlineStack gap="200" align="start" blockAlign="center" wrap={false}>
+                    <div style={{ width: 20, height: 20 }}><Icon source={LinkIcon} tone="base" /></div>
+                    <Text variant="headingMd" as="h2">{text.tab_source}</Text>
                   </InlineStack>
+                  <Divider />
+                  
+                  {/* alignItemsをstartにして、表が長くなっても上揃えにする */}
+                  <InlineGrid columns={{xs: 1, md: 2}} gap="600" alignItems="start"> 
+                    <Box>
+                      {sourceData.length > 0 ? (
+                        (() => {
+                          // 🌟 円グラフが潰れないように「Top 5 ＋ その他」に自動整形
+                          const MAX_SLICES = 5;
+                          let pieData = sourceData;
+                          if (sourceData.length > MAX_SLICES) {
+                            const top = sourceData.slice(0, MAX_SLICES);
+                            const restTotal = sourceData.slice(MAX_SLICES).reduce((sum, item) => sum + item.total, 0);
+                            pieData = [...top, { name: 'その他 (少数流入)', total: restTotal }];
+                          }
+                          return (
+                            <ResponsiveContainer width="100%" height={280}>
+                              <PieChart>
+                                <Pie data={pieData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                                  {/* SOURCE_COLORSにない名前(新規の少数流入など)はグレーを割り当て */}
+                                  {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.name] || '#B9B9B9'} />)}
+                                </Pie>
+                                <Tooltip />
+                                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        })()
+                      ) : <Box padding="500"><Text tone="subdued" alignment="center">{text.empty_data}</Text></Box>}
+                    </Box>
+                    <Box>
+                      {/* 🌟 表が伸びないようにスクロール領域(maxHeight)で囲む */}
+                      <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid #ebebeb', borderRadius: '8px' }}>
+                        <DataTable
+                          columnContentTypes={['text', 'numeric', 'numeric', 'numeric', 'numeric']}
+                          headings={[text.source_name, text.source_total, text.source_fav, text.source_restock, text.source_cv]}
+                          rows={sourceData.map(s => [<Badge tone="info">{s.name}</Badge>, <Text fontWeight="bold">{s.total}</Text>, s.favs, s.restocks, <Text tone="success" fontWeight="bold">{s.conversions}</Text>])}
+                        />
+                      </div>
+                    </Box>
+                  </InlineGrid>
                 </BlockStack>
               </Card>
             </Layout.Section>
