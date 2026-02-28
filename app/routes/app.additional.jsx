@@ -363,7 +363,7 @@ export default function AdditionalPage() {
       founder_desc: "初期導入ユーザー様への特別プラン（Pro機能が永久無料）。招待コードをお持ちの場合は入力してください。",
       founder_badge_active: "Founder メンバー",
       founder_badge_left: "残り枠: {left} / {total}",
-      founder_placeholder: "招待コード (例: FOUNDER100)",
+      founder_placeholder: "招待コード (例: XX-XXXX-XXXX)",
       btn_founder: "特典を受け取る",
       founder_thanks: "✨ あなたはFounderメンバーです！\n今後のすべてのアップデートやPro機能が永久に無料でご利用いただけます。初期からのご支援、本当にありがとうございます。",
       // ★追加テキスト
@@ -398,7 +398,7 @@ export default function AdditionalPage() {
       founder_desc: "Special plan for early adopters (Pro features forever free). Enter your invite code.",
       founder_badge_active: "Founder Member",
       founder_badge_left: "{left} / {total} spots left",
-      founder_placeholder: "Invite Code (e.g. FOUNDER100)",
+      founder_placeholder: "Invite Code (e.g. XX-XXXX-XXXX)",
       btn_founder: "Claim Offer",
       founder_thanks: "✨ You are a Founder Member!\nAll future updates and Pro features are forever free. Thank you for your early support!",
       lang_lock_title: "Multi-language support is available on Standard Plan",
