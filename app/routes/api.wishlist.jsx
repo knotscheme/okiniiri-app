@@ -28,7 +28,7 @@ export const action = async ({ request }) => {
     const shopDomain = url.searchParams.get("shop") || "shirakawa-2.myshopify.com";
     const body = await request.json().catch(() => ({}));
     
-    // 🌟 修正：referrer（流入元）をしっかり受け取る！
+    // 🌟 修正：referrer をここに追加しました！これでLINEを拾えます
     const { customerId, productHandle, mode, referrer } = body;
 
     if (!productHandle) return customJson({ error: "Missing handle" });
@@ -38,7 +38,7 @@ export const action = async ({ request }) => {
     const actionType = (mode === 'delete') ? 'removed' : 'added';
 
     // =========================================================================
-    // Prisma保存（流入元も記録！）
+    // 2. Prisma保存（流入元も一緒に記録）
     // =========================================================================
     try {
       const dbId = isGuest ? (customerId || "guest_anonymous") : idStr;
@@ -52,7 +52,7 @@ export const action = async ({ request }) => {
               shop: shopDomain, 
               customerId: dbId, 
               productHandle: String(productHandle),
-              // 🌟 ここ！送られてきた流入元を保存します
+              // 🌟 ここで確実に保存します
               referrer: String(referrer || "Direct") 
             }
           });
@@ -64,33 +64,35 @@ export const action = async ({ request }) => {
         });
       }
     } catch (dbErr) {
-      console.error("⚠️ [DB] Prisma Error (Referrer may be missing in schema):", dbErr.message);
+      console.error("⚠️ [DB] Prisma Error:", dbErr.message);
     }
 
-    // (会員データの同期処理は変更なしのため省略して継続)
+    // 会員同期処理（安全ガード付き）
     if (!isGuest && idStr.length > 5 && adminContext) {
       try {
         const customerQuery = await adminContext.graphql(
           `query getC($id: ID!) { customer(id: $id) { metafield(namespace: "custom", key: "wishlist") { value } } }`,
           { variables: { id: `gid://shopify/Customer/${customerId}` } }
-        );
-        const customerData = await customerQuery.json();
-        let list = [];
-        const val = customerData.data?.customer?.metafield?.value;
-        if (val) try { list = JSON.parse(val); } catch(e) {}
-        if (mode === 'delete') { list = list.filter(h => h !== productHandle); }
-        else { if (!list.includes(productHandle)) list.push(productHandle); }
-        await adminContext.graphql(
-          `mutation updateC($input: CustomerInput!) { customerUpdate(input: $input) { customer { id } } }`,
-          { variables: { input: { id: `gid://shopify/Customer/${customerId}`, metafields: [{ namespace: "custom", key: "wishlist", value: JSON.stringify(list), type: "json" }] } } }
-        );
-      } catch (err) {}
+        ).catch(() => null);
+        if (customerQuery) {
+          const customerData = await customerQuery.json();
+          let list = [];
+          const val = customerData.data?.customer?.metafield?.value;
+          if (val) try { list = JSON.parse(val); } catch(e) {}
+          if (mode === 'delete') { list = list.filter(h => h !== productHandle); }
+          else { if (!list.includes(productHandle)) list.push(productHandle); }
+          await adminContext.graphql(
+            `mutation updateC($input: CustomerInput!) { customerUpdate(input: $input) { customer { id } } }`,
+            { variables: { input: { id: `gid://shopify/Customer/${customerId}`, metafields: [{ namespace: "custom", key: "wishlist", value: JSON.stringify(list), type: "json" }] } } }
+          ).catch(() => null);
+        }
+      } catch (e) {}
     }
 
     return customJson({ success: true, action: actionType });
 
   } catch (err) {
-    console.error("❌ [API] Error:", err);
+    console.error("❌ [Critical] Error:", err);
     return customJson({ error: "Server Error" }, { status: 500 });
   }
 };
