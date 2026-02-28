@@ -246,15 +246,18 @@ export const loader = async ({ request }) => {
   const sourceData = Object.values(sourceMap).map(s => ({ name: s.name, total: s.total, unique: s.uniqueUsers.size, favs: s.favs, restocks: s.restocks, conversions: s.conversions })).sort((a, b) => b.total - a.total);
 
   // ==========================================
-  // ★追加: 下段4枚のカード用 KPI計算
+  // ★追加: 下段4枚のカード用 KPI計算（見込売上版）
   // ==========================================
-  const topSource = sourceData.length > 0 ? sourceData[0].name : "None";
   const totalUniqueUsers = new Set(rawDetailedData.map(d => d.userId || d.userEmail).filter(Boolean)).size;
   const totalRevenue = restockRaw.filter(r => r.isConverted).reduce((sum, r) => sum + (parseFloat(r.convertedPrice) || 0), 0);
   const aov = totalConversions > 0 ? Math.round(totalRevenue / totalConversions) : 0;
   
+  // 🌟 新規計算：見込売上（未購入の入荷待ち人数 × 平均客単価）
+  const pendingRestocks = totalRestocks - totalConversions;
+  const potentialRevenue = pendingRestocks * aov;
+  
   // 計算結果をサマリーに追加
-  summary = { ...summary, topSource, totalUniqueUsers, totalRevenue, aov };
+  summary = { ...summary, totalUniqueUsers, totalRevenue, aov, potentialRevenue };
 
   const groupStats = (items, type) => {
     const map = {};
@@ -295,14 +298,14 @@ export default function AnalysisPage() {
     'その他': '#8A8D91', 'Others': '#8A8D91', '其他': '#8A8D91', 'Autres': '#8A8D91', 'Andere': '#8A8D91', 'Otros': '#8A8D91' 
   };
 
-  // ★翻訳辞書に新カードの文言を追加
+  // ★翻訳辞書：kpi_top_sourceを kpi_potential_rev(見込売上) に変更
   const t = {
     ja: {
       title: "統合分析ダッシュボード",
       period_label: "集計期間", p_7: "過去7日間", p_30: "過去30日間", p_all: "全期間", p_custom: "カスタム期間...",
       btn_date: "日付を選択", btn_apply: "適用する", btn_export: "CSVエクスポート", display: "表示中",
       kpi_fav: "累計お気に入り数", kpi_restock: "入荷通知登録数", kpi_cv_count: "復活した注文 (CV)", kpi_cv_rate: "コンバージョン率",
-      kpi_users: "利用ユーザー数", kpi_top_source: "主要流入元", kpi_aov: "平均客単価", kpi_revenue: "アプリ経由の売上",
+      kpi_users: "利用ユーザー数", kpi_potential_rev: "見込売上", kpi_aov: "平均客単価", kpi_revenue: "アプリ経由の売上",
       tab_source: "流入元（リファラー）分析", tab_trend: "需要と成果のトレンド",
       source_name: "流入元", source_total: "総件数", source_fav: "お気に入り", source_restock: "入荷通知", source_cv: "購入(CV)",
       ranking_fav: "お気に入り TOP 5", ranking_restock: "再入荷通知 TOP 5",
@@ -330,7 +333,7 @@ export default function AnalysisPage() {
       period_label: "Period", p_7: "Last 7 Days", p_30: "Last 30 Days", p_all: "All Time", p_custom: "Custom Range...",
       btn_date: "Select Dates", btn_apply: "Apply", btn_export: "Export CSV", display: "Displaying",
       kpi_fav: "Favorites", kpi_restock: "Restock Requests", kpi_cv_count: "Recovered Orders (CV)", kpi_cv_rate: "Conversion Rate",
-      kpi_users: "Active Users", kpi_top_source: "Top Source", kpi_aov: "Average Order Value", kpi_revenue: "Total Revenue",
+      kpi_users: "Active Users", kpi_potential_rev: "Potential Revenue", kpi_aov: "Average Order Value", kpi_revenue: "Total Revenue",
       tab_source: "Traffic Source Analysis", tab_trend: "Demand & Performance Trend",
       source_name: "Source", source_total: "Total", source_fav: "Favs", source_restock: "Restocks", source_cv: "Purchased",
       ranking_fav: "Top 5 Favorites", ranking_restock: "Top 5 Restock Requests",
@@ -358,7 +361,7 @@ export default function AnalysisPage() {
       period_label: "統計期間", p_7: "過去7天", p_30: "過去30天", p_all: "全部期間", p_custom: "自定義期間...",
       btn_date: "選擇日期", btn_apply: "應用", btn_export: "導出CSV", display: "顯示中",
       kpi_fav: "收藏數", kpi_restock: "補貨通知數", kpi_cv_count: "恢復訂單 (CV)", kpi_cv_rate: "轉化率",
-      kpi_users: "活躍用戶數", kpi_top_source: "主要流量來源", kpi_aov: "平均客單價", kpi_revenue: "總營收",
+      kpi_users: "活躍用戶數", kpi_potential_rev: "潛在營收", kpi_aov: "平均客單價", kpi_revenue: "總營收",
       tab_source: "流量來源分析", tab_trend: "需求與績效趨勢",
       source_name: "來源", source_total: "總數", source_fav: "收藏", source_restock: "通知", source_cv: "購買",
       ranking_fav: "熱門收藏 TOP 5", ranking_restock: "熱門補貨通知 TOP 5",
@@ -386,7 +389,7 @@ export default function AnalysisPage() {
       period_label: "Période", p_7: "7 derniers jours", p_30: "30 derniers jours", p_all: "Tout le temps", p_custom: "Personnalisé...",
       btn_date: "Choisir dates", btn_apply: "Appliquer", btn_export: "Exporter CSV", display: "Affichage",
       kpi_fav: "Favoris", kpi_restock: "Demandes stock", kpi_cv_count: "Commandes récupérées", kpi_cv_rate: "Taux de conversion",
-      kpi_users: "Utilisateurs actifs", kpi_top_source: "Source principale", kpi_aov: "Panier moyen", kpi_revenue: "Revenu total",
+      kpi_users: "Utilisateurs actifs", kpi_potential_rev: "Revenu Potentiel", kpi_aov: "Panier moyen", kpi_revenue: "Revenu total",
       tab_source: "Analyse des sources", tab_trend: "Tendance demande & perf.",
       source_name: "Source", source_total: "Total", source_fav: "Fav", source_restock: "Stock", source_cv: "Achat",
       ranking_fav: "Top 5 Favoris", ranking_restock: "Top 5 Demandes stock",
@@ -414,7 +417,7 @@ export default function AnalysisPage() {
       period_label: "Zeitraum", p_7: "Letzte 7 Tage", p_30: "Letzte 30 Tage", p_all: "Gesamt", p_custom: "Benutzerdefiniert...",
       btn_date: "Datum wählen", btn_apply: "Anwenden", btn_export: "CSV Export", display: "Anzeige",
       kpi_fav: "Favoriten", kpi_restock: "Benachrichtigungen", kpi_cv_count: "Bestellungen (CV)", kpi_cv_rate: "Konversionsrate",
-      kpi_users: "Aktive Nutzer", kpi_top_source: "Hauptquelle", kpi_aov: "Ø Bestellwert", kpi_revenue: "Gesamtumsatz",
+      kpi_users: "Aktive Nutzer", kpi_potential_rev: "Potenzieller Umsatz", kpi_aov: "Ø Bestellwert", kpi_revenue: "Gesamtumsatz",
       tab_source: "Traffic-Quellen", tab_trend: "Nachfrage & Leistung",
       source_name: "Quelle", source_total: "Gesamt", source_fav: "Fav", source_restock: "Stock", source_cv: "Kauf",
       ranking_fav: "Top 5 Favoriten", ranking_restock: "Top 5 Anfragen",
@@ -442,7 +445,7 @@ export default function AnalysisPage() {
       period_label: "Período", p_7: "Últimos 7 días", p_30: "Últimos 30 días", p_all: "Todo", p_custom: "Personalizado...",
       btn_date: "Elegir fechas", btn_apply: "Aplicar", btn_export: "Exportar CSV", display: "Mostrando",
       kpi_fav: "Favoritos", kpi_restock: "Solicitudes stock", kpi_cv_count: "Pedidos recup. (CV)", kpi_cv_rate: "Tasa conversión",
-      kpi_users: "Usuarios activos", kpi_top_source: "Fuente principal", kpi_aov: "Valor medio pedido", kpi_revenue: "Ingresos totales",
+      kpi_users: "Usuarios activos", kpi_potential_rev: "Ingresos Potenciales", kpi_aov: "Valor medio pedido", kpi_revenue: "Ingresos totales",
       tab_source: "Análisis de fuentes", tab_trend: "Tendencia demanda y rend.",
       source_name: "Fuente", source_total: "Total", source_fav: "Fav", source_restock: "Stock", source_cv: "Compra",
       ranking_fav: "Top 5 Favoritos", ranking_restock: "Top 5 Solicitudes",
@@ -668,7 +671,7 @@ export default function AnalysisPage() {
                    </BlockStack>
                  </Card>
 
-                 {/* 2段目: 新しく追加した分析用4枚 */}
+                 {/* 2段目: マーケティング用の深掘り4枚 */}
                  <Card>
                    <BlockStack gap="200">
                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
@@ -681,14 +684,10 @@ export default function AnalysisPage() {
                  <Card>
                    <BlockStack gap="200">
                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
-                       <div style={{ width: '20px', display: 'flex' }}><Icon source={LinkIcon} tone="subdued" /></div>
-                       <Text variant="headingSm" tone="subdued">{text.kpi_top_source}</Text>
+                       <div style={{ width: '20px', display: 'flex' }}><Icon source={MoneyIcon} tone="subdued" /></div>
+                       <Text variant="headingSm" tone="subdued">{text.kpi_potential_rev}</Text>
                      </div>
-                     <div style={{ textAlign: 'right', marginTop: '4px' }}>
-                       <Badge tone={summary.topSource === 'LINE' ? 'success' : summary.topSource === 'Instagram' ? 'warning' : 'info'} size="large">
-                         {summary.topSource}
-                       </Badge>
-                     </div>
+                     <Text variant="heading2xl" tone="base" alignment="end">{summary.potentialRevenue.toLocaleString()}</Text>
                    </BlockStack>
                  </Card>
                  <Card>
