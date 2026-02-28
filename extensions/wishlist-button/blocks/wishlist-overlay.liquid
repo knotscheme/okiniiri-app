@@ -61,10 +61,36 @@
 <script>
   (function() {
     const pageType = {{ request.page_type | json }};
+    // 商品ページ自体や既にコンテナがある場合は二重動作を防ぐため終了
     if (pageType === 'product' || document.querySelector('.wishlist-modern-container')) return;
 
     const CUSTOMER_ID = "{{ customer.id }}";
     const STORAGE_KEY = 'wishflow_guest_list';
+
+    // 🌟 【慎重追加】LINE・インスタ・UTMを自動判別する関数
+    // 他の変数に干渉しないよう独立させています
+    function getWishflowReferrer() {
+      try {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 1. URLのutm_sourceがあれば最優先（例: ?utm_source=line）
+        const utm = urlParams.get('utm_source');
+        if (utm) return utm.toLowerCase();
+        
+        // 2. ブラウザの身分証からLINE/Instagramを判別
+        if (ua.indexOf('Line') > -1) return 'line';
+        if (ua.indexOf('Instagram') > -1) return 'instagram';
+        
+        // 3. どちらもなければ通常のリファラー（どこから来たか）、それもなければ Direct
+        const ref = document.referrer;
+        if (ref && ref.indexOf(window.location.hostname) === -1) return ref;
+        
+        return "Direct";
+      } catch (e) {
+        return "Direct"; // エラー時は安全にDirectを返す
+      }
+    }
 
     function getSafeList() {
       let list = [];
@@ -72,7 +98,10 @@
         list = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         {% if customer %}
           const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
-          if (metaRaw) list = [...new Set([...list, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))])];
+          if (metaRaw) {
+            const parsedMeta = Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw);
+            list = [...new Set([...list, ...parsedMeta])];
+          }
         {% endif %}
       } catch(e) {}
       return list;
@@ -89,24 +118,20 @@
         const card = link.closest('.card-wrapper, .product-card-wrapper, .grid__item, .product-item');
         let target = null;
         if (card) {
-             target = card.querySelector('.card__media, .card__inner, .media, .product-item__media, .image-wrap');
-             if(!target) target = card;
+          target = card.querySelector('.card__media, .card__inner, .media, .product-item__media, .image-wrap');
+          if(!target) target = card;
         } else {
-             target = link;
+          target = link;
         }
         
         if (!target || target.querySelector(`.wishflow-overlay-btn[data-handle="${handle}"]`)) return;
         if (!target.querySelector('img')) return;
 
         if (window.getComputedStyle(target).position === 'static') target.style.position = 'relative';
-
-        // ★ 1. 画像枠を透明リンクより上に引き上げる
         target.style.zIndex = '2';
-
-        // ★ 2. 画像枠自体に「クリックしたら商品ページへ飛ぶ」機能をつける
         target.style.cursor = 'pointer';
+
         target.addEventListener('click', function(e) {
-          // ボタンがクリックされた時は反応しないようにする
           if (!e.target.closest('.wishflow-overlay-btn')) {
             window.location.href = link.href;
           }
@@ -121,7 +146,7 @@
         
         btn.addEventListener('click', function(e) {
           e.preventDefault(); 
-          e.stopPropagation(); // ★ ボタンのクリックが画像に伝わるのを防ぐ
+          e.stopPropagation(); 
           e.stopImmediatePropagation();
 
           const isActive = this.classList.contains('active');
@@ -132,14 +157,18 @@
           else if (!list.includes(handle)) list.push(handle);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 
-          if (CUSTOMER_ID) {
-            const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
-            fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle' })
-            }).catch(err => console.error(err));
-          }
+          // 🌟 【重要修正】分析のために会員・ゲスト問わずAPIを叩く
+          const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+          fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              customerId: CUSTOMER_ID || "guest_" + (Math.random().toString(36).substring(2, 10)), // ゲストID生成
+              productHandle: handle, 
+              mode: isActive ? 'delete' : 'add',
+              referrer: getWishflowReferrer() // 👈 ここでLINE判別結果を送る
+            })
+          }).catch(err => console.error("Wishflow API Error:", err));
 
           window.dispatchEvent(new CustomEvent('wishflow:updated', { detail: { handle: handle, active: !isActive } }));
           return false;

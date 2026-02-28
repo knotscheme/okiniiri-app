@@ -170,13 +170,16 @@ export const loader = async ({ request }) => {
     if (!referrer) return txt.direct;
     const ref = referrer.toLowerCase();
     
-    // 🌟 判定を強化：'line' という短い文字そのもの、または 'line.me' があれば LINE！
-    if (ref === 'line' || ref.includes('line.me')) return 'LINE';
+    // 🌟 LINE判定：URLの中に "line" という文字がどこかにあれば LINE
+    if (ref.includes('line')) return 'LINE';
     
-    // インスタも同様に強化（utm_source=instagram にも対応）
-    if (ref === 'instagram' || ref.includes('instagram.com')) return 'Instagram';
+    // 🌟 Instagram判定：URLの中に "ig" や "instagram" があれば Instagram
+    if (ref.includes('ig') || ref.includes('instagram')) return 'Instagram';
     
-    if (ref.includes('facebook.com') || ref.includes('fb.')) return 'Facebook';
+    // Facebook判定
+    if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
+    
+    // 検索エンジン判定
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
     
