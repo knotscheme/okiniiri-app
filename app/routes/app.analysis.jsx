@@ -6,7 +6,7 @@ import {
 } from "@shopify/polaris";
 import { 
   ExportIcon, ImageIcon, LinkIcon, CalendarIcon, 
-  HeartIcon, EmailIcon, OrderIcon, MoneyIcon 
+  HeartIcon, EmailIcon, OrderIcon, MoneyIcon, PersonIcon
 } from '@shopify/polaris-icons';
 import { 
   ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, 
@@ -105,7 +105,9 @@ export const loader = async ({ request }) => {
   const totalRestocks = restockRaw.length;
   const totalConversions = restockRaw.filter(r => r.isConverted).length;
   const conversionRate = totalRestocks > 0 ? ((totalConversions / totalRestocks) * 100).toFixed(1) : "0.0";
-  const summary = { totalFavs, totalRestocks, totalConversions, conversionRate };
+  
+  // 基本サマリーの定義
+  let summary = { totalFavs, totalRestocks, totalConversions, conversionRate };
 
   const allHandles = Array.from(new Set([...favRaw.map(s => s.productHandle), ...restockRaw.map(s => s.productHandle)]));
   const rawCustomerIds = Array.from(new Set(favRaw.map(f => f.customerId).filter(id => id)));
@@ -165,22 +167,13 @@ export const loader = async ({ request }) => {
     } catch (e) { permissionError = true; }
   }
 
-  // 🌟 修正後：ドメインだけでなく、UTMパラメータの短い文字列も判定に加えます
   const getSourceCategory = (referrer) => {
     if (!referrer) return txt.direct;
     const ref = referrer.toLowerCase();
     
-    // 🌟 判定ロジックを「含むか（includes）」に変更
-    // これにより、どんなに長いURLでもキーワードを拾えます
     if (ref.includes('line')) return 'LINE';
-    
-    // インスタ（ig または instagram）
     if (ref.includes('ig') || ref.includes('instagram')) return 'Instagram';
-    
-    // Facebook
     if (ref.includes('facebook') || ref.includes('fb.')) return 'Facebook';
-    
-    // Googleなど
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
     
@@ -252,6 +245,17 @@ export const loader = async ({ request }) => {
 
   const sourceData = Object.values(sourceMap).map(s => ({ name: s.name, total: s.total, unique: s.uniqueUsers.size, favs: s.favs, restocks: s.restocks, conversions: s.conversions })).sort((a, b) => b.total - a.total);
 
+  // ==========================================
+  // ★追加: 下段4枚のカード用 KPI計算
+  // ==========================================
+  const topSource = sourceData.length > 0 ? sourceData[0].name : "None";
+  const totalUniqueUsers = new Set(rawDetailedData.map(d => d.userId || d.userEmail).filter(Boolean)).size;
+  const totalRevenue = restockRaw.filter(r => r.isConverted).reduce((sum, r) => sum + (parseFloat(r.convertedPrice) || 0), 0);
+  const aov = totalConversions > 0 ? Math.round(totalRevenue / totalConversions) : 0;
+  
+  // 計算結果をサマリーに追加
+  summary = { ...summary, topSource, totalUniqueUsers, totalRevenue, aov };
+
   const groupStats = (items, type) => {
     const map = {};
     items.forEach(i => {
@@ -286,43 +290,23 @@ export default function AnalysisPage() {
     'LINE': '#00C300', 
     'Google': '#4285F4', 
     'Facebook': '#1877F2', 
-    
-    // オーガニック検索系 (#FBC02D)
-    'オーガニック検索': '#FBC02D', 
-    'Organic Search': '#FBC02D', 
-    '自然搜尋': '#FBC02D', 
-    'Recherche organique': '#FBC02D', 
-    'Organische Suche': '#FBC02D', 
-    'Búsqueda orgánica': '#FBC02D',
-    
-    // 直接流入 / 不明系 (#5C5F62)
-    '直接流入 / 不明': '#5C5F62', 
-    'Direct / Unknown': '#5C5F62', 
-    '直接訪問 / 未知': '#5C5F62', 
-    'Direct / Inconnu': '#5C5F62', 
-    'Direkt / Unbekannt': '#5C5F62', 
-    'Directo / Desconocido': '#5C5F62',
-    
-    // その他系 (#8A8D91)
-    'その他': '#8A8D91', 
-    'Others': '#8A8D91', 
-    '其他': '#8A8D91', 
-    'Autres': '#8A8D91', 
-    'Andere': '#8A8D91', 
-    'Otros': '#8A8D91' 
+    'オーガニック検索': '#FBC02D', 'Organic Search': '#FBC02D', '自然搜尋': '#FBC02D', 'Recherche organique': '#FBC02D', 'Organische Suche': '#FBC02D', 'Búsqueda orgánica': '#FBC02D',
+    '直接流入 / 不明': '#5C5F62', 'Direct / Unknown': '#5C5F62', '直接訪問 / 未知': '#5C5F62', 'Direct / Inconnu': '#5C5F62', 'Direkt / Unbekannt': '#5C5F62', 'Directo / Desconocido': '#5C5F62',
+    'その他': '#8A8D91', 'Others': '#8A8D91', '其他': '#8A8D91', 'Autres': '#8A8D91', 'Andere': '#8A8D91', 'Otros': '#8A8D91' 
   };
 
-  // ★元々の6カ国語設定を一文字も削らずに完全に維持
+  // ★翻訳辞書に新カードの文言を追加
   const t = {
     ja: {
       title: "統合分析ダッシュボード",
       period_label: "集計期間", p_7: "過去7日間", p_30: "過去30日間", p_all: "全期間", p_custom: "カスタム期間...",
       btn_date: "日付を選択", btn_apply: "適用する", btn_export: "CSVエクスポート", display: "表示中",
-      kpi_fav: "お気に入り数", kpi_restock: "入荷通知登録数", kpi_cv_count: "復活した注文 (CV)", kpi_cv_rate: "通知からの購入率",
+      kpi_fav: "累計お気に入り数", kpi_restock: "入荷通知登録数", kpi_cv_count: "復活した注文 (CV)", kpi_cv_rate: "コンバージョン率",
+      kpi_users: "利用ユーザー数", kpi_top_source: "主要流入元", kpi_aov: "平均客単価", kpi_revenue: "アプリ経由の売上",
       tab_source: "流入元（リファラー）分析", tab_trend: "需要と成果のトレンド",
       source_name: "流入元", source_total: "総件数", source_fav: "お気に入り", source_restock: "入荷通知", source_cv: "購入(CV)",
       ranking_fav: "お気に入り TOP 5", ranking_restock: "再入荷通知 TOP 5",
-      col_img: "画像", col_prod: "商品", col_count: "登録数", col_req: "リクエスト (うち購入)", unit_buy: "件 購入", unit_count: "",
+      col_img: "画像", col_prod: "商品", col_count: "登録数", col_req: "リクエスト (うち購入)", unit_buy: "件 購入", unit_count: "件", unit_user: "人",
       empty_data: "この期間のデータはありません",
       csv_title: "CSVエクスポート設定", csv_desc: "出力したい項目にチェックを入れてください。設定はブラウザに保存されます。",
       btn_dl: "CSVをダウンロード", btn_cancel: "キャンセル", btn_all: "全選択", btn_clear: "全解除",
@@ -346,10 +330,11 @@ export default function AnalysisPage() {
       period_label: "Period", p_7: "Last 7 Days", p_30: "Last 30 Days", p_all: "All Time", p_custom: "Custom Range...",
       btn_date: "Select Dates", btn_apply: "Apply", btn_export: "Export CSV", display: "Displaying",
       kpi_fav: "Favorites", kpi_restock: "Restock Requests", kpi_cv_count: "Recovered Orders (CV)", kpi_cv_rate: "Conversion Rate",
+      kpi_users: "Active Users", kpi_top_source: "Top Source", kpi_aov: "Average Order Value", kpi_revenue: "Total Revenue",
       tab_source: "Traffic Source Analysis", tab_trend: "Demand & Performance Trend",
       source_name: "Source", source_total: "Total", source_fav: "Favs", source_restock: "Restocks", source_cv: "Purchased",
       ranking_fav: "Top 5 Favorites", ranking_restock: "Top 5 Restock Requests",
-      col_img: "Image", col_prod: "Product", col_count: "Count", col_req: "Requests (Purchased)", unit_buy: " bought", unit_count: "",
+      col_img: "Image", col_prod: "Product", col_count: "Count", col_req: "Requests (Purchased)", unit_buy: " bought", unit_count: "", unit_user: "",
       empty_data: "No data available for this period.",
       csv_title: "CSV Export Settings", csv_desc: "Select columns to export. Settings are saved in your browser.",
       btn_dl: "Download CSV", btn_cancel: "Cancel", btn_all: "Select All", btn_clear: "Clear All",
@@ -373,10 +358,11 @@ export default function AnalysisPage() {
       period_label: "統計期間", p_7: "過去7天", p_30: "過去30天", p_all: "全部期間", p_custom: "自定義期間...",
       btn_date: "選擇日期", btn_apply: "應用", btn_export: "導出CSV", display: "顯示中",
       kpi_fav: "收藏數", kpi_restock: "補貨通知數", kpi_cv_count: "恢復訂單 (CV)", kpi_cv_rate: "轉化率",
+      kpi_users: "活躍用戶數", kpi_top_source: "主要流量來源", kpi_aov: "平均客單價", kpi_revenue: "總營收",
       tab_source: "流量來源分析", tab_trend: "需求與績效趨勢",
       source_name: "來源", source_total: "總數", source_fav: "收藏", source_restock: "通知", source_cv: "購買",
       ranking_fav: "熱門收藏 TOP 5", ranking_restock: "熱門補貨通知 TOP 5",
-      col_img: "圖片", col_prod: "商品", col_count: "數量", col_req: "請求 (其中購買)", unit_buy: "件 購買", unit_count: "",
+      col_img: "圖片", col_prod: "商品", col_count: "數量", col_req: "請求 (其中購買)", unit_buy: "件 購買", unit_count: "", unit_user: "",
       empty_data: "此期間無數據",
       csv_title: "CSV導出設置", csv_desc: "請選擇要導出的項目。設置將保存在瀏覽器中。",
       btn_dl: "下載CSV", btn_cancel: "取消", btn_all: "全選", btn_clear: "清空",
@@ -400,10 +386,11 @@ export default function AnalysisPage() {
       period_label: "Période", p_7: "7 derniers jours", p_30: "30 derniers jours", p_all: "Tout le temps", p_custom: "Personnalisé...",
       btn_date: "Choisir dates", btn_apply: "Appliquer", btn_export: "Exporter CSV", display: "Affichage",
       kpi_fav: "Favoris", kpi_restock: "Demandes stock", kpi_cv_count: "Commandes récupérées", kpi_cv_rate: "Taux de conversion",
+      kpi_users: "Utilisateurs actifs", kpi_top_source: "Source principale", kpi_aov: "Panier moyen", kpi_revenue: "Revenu total",
       tab_source: "Analyse des sources", tab_trend: "Tendance demande & perf.",
       source_name: "Source", source_total: "Total", source_fav: "Fav", source_restock: "Stock", source_cv: "Achat",
       ranking_fav: "Top 5 Favoris", ranking_restock: "Top 5 Demandes stock",
-      col_img: "Image", col_prod: "Produit", col_count: "Qté", col_req: "Demandes (Acheté)", unit_buy: " achetés", unit_count: "",
+      col_img: "Image", col_prod: "Produit", col_count: "Qté", col_req: "Demandes (Acheté)", unit_buy: " achetés", unit_count: "", unit_user: "",
       empty_data: "Aucune donnée pour cette période.",
       csv_title: "Paramètres d'export CSV", csv_desc: "Sélectionnez les colonnes. Paramètres enregistrés.",
       btn_dl: "Télécharger CSV", btn_cancel: "Annuler", btn_all: "Tout", btn_clear: "Vider",
@@ -427,10 +414,11 @@ export default function AnalysisPage() {
       period_label: "Zeitraum", p_7: "Letzte 7 Tage", p_30: "Letzte 30 Tage", p_all: "Gesamt", p_custom: "Benutzerdefiniert...",
       btn_date: "Datum wählen", btn_apply: "Anwenden", btn_export: "CSV Export", display: "Anzeige",
       kpi_fav: "Favoriten", kpi_restock: "Benachrichtigungen", kpi_cv_count: "Bestellungen (CV)", kpi_cv_rate: "Konversionsrate",
+      kpi_users: "Aktive Nutzer", kpi_top_source: "Hauptquelle", kpi_aov: "Ø Bestellwert", kpi_revenue: "Gesamtumsatz",
       tab_source: "Traffic-Quellen", tab_trend: "Nachfrage & Leistung",
       source_name: "Quelle", source_total: "Gesamt", source_fav: "Fav", source_restock: "Stock", source_cv: "Kauf",
       ranking_fav: "Top 5 Favoriten", ranking_restock: "Top 5 Anfragen",
-      col_img: "Bild", col_prod: "Produkt", col_count: "Anz.", col_req: "Anfragen (Gekauft)", unit_buy: " gekauft", unit_count: "",
+      col_img: "Bild", col_prod: "Produkt", col_count: "Anz.", col_req: "Anfragen (Gekauft)", unit_buy: " gekauft", unit_count: "", unit_user: "",
       empty_data: "Keine Daten verfügbar.",
       csv_title: "CSV Export Einstellungen", csv_desc: "Spalten auswählen. Einstellungen werden gespeichert.",
       btn_dl: "CSV Herunterladen", btn_cancel: "Abbrechen", btn_all: "Alle", btn_clear: "Leeren",
@@ -454,10 +442,11 @@ export default function AnalysisPage() {
       period_label: "Período", p_7: "Últimos 7 días", p_30: "Últimos 30 días", p_all: "Todo", p_custom: "Personalizado...",
       btn_date: "Elegir fechas", btn_apply: "Aplicar", btn_export: "Exportar CSV", display: "Mostrando",
       kpi_fav: "Favoritos", kpi_restock: "Solicitudes stock", kpi_cv_count: "Pedidos recup. (CV)", kpi_cv_rate: "Tasa conversión",
+      kpi_users: "Usuarios activos", kpi_top_source: "Fuente principal", kpi_aov: "Valor medio pedido", kpi_revenue: "Ingresos totales",
       tab_source: "Análisis de fuentes", tab_trend: "Tendencia demanda y rend.",
       source_name: "Fuente", source_total: "Total", source_fav: "Fav", source_restock: "Stock", source_cv: "Compra",
       ranking_fav: "Top 5 Favoritos", ranking_restock: "Top 5 Solicitudes",
-      col_img: "Imagen", col_prod: "Producto", col_count: "Cant.", col_req: "Solicitudes (Comprado)", unit_buy: " comprados", unit_count: "",
+      col_img: "Imagen", col_prod: "Producto", col_count: "Cant.", col_req: "Solicitudes (Comprado)", unit_buy: " comprados", unit_count: "", unit_user: "",
       empty_data: "No hay datos para este período.",
       csv_title: "Configuración CSV", csv_desc: "Seleccione columnas. Se guardará en el navegador.",
       btn_dl: "Descargar CSV", btn_cancel: "Cancelar", btn_all: "Todos", btn_clear: "Limpiar",
@@ -635,8 +624,13 @@ export default function AnalysisPage() {
               </Card>
             </Layout.Section>
 
+            {/* ========================================== */}
+            {/* ★修正: 8枚のカードを表示するセクション       */}
+            {/* ========================================== */}
             <Layout.Section>
                <InlineGrid columns={{xs: 1, sm: 2, md: 4}} gap="400">
+                 
+                 {/* 1段目: 基本の4枚 */}
                  <Card>
                    <BlockStack gap="200">
                      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
@@ -673,6 +667,49 @@ export default function AnalysisPage() {
                      <Text variant="heading2xl" alignment="end">{summary.conversionRate}%</Text>
                    </BlockStack>
                  </Card>
+
+                 {/* 2段目: 新しく追加した分析用4枚 */}
+                 <Card>
+                   <BlockStack gap="200">
+                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+                       <div style={{ width: '20px', display: 'flex' }}><Icon source={PersonIcon} tone="subdued" /></div>
+                       <Text variant="headingSm" tone="subdued">{text.kpi_users}</Text>
+                     </div>
+                     <Text variant="heading2xl" tone="base" alignment="end">{summary.totalUniqueUsers}<span style={{ fontSize: '14px', fontWeight: 'normal' }}>{text.unit_user}</span></Text>
+                   </BlockStack>
+                 </Card>
+                 <Card>
+                   <BlockStack gap="200">
+                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+                       <div style={{ width: '20px', display: 'flex' }}><Icon source={LinkIcon} tone="subdued" /></div>
+                       <Text variant="headingSm" tone="subdued">{text.kpi_top_source}</Text>
+                     </div>
+                     <div style={{ textAlign: 'right', marginTop: '4px' }}>
+                       <Badge tone={summary.topSource === 'LINE' ? 'success' : summary.topSource === 'Instagram' ? 'warning' : 'info'} size="large">
+                         {summary.topSource}
+                       </Badge>
+                     </div>
+                   </BlockStack>
+                 </Card>
+                 <Card>
+                   <BlockStack gap="200">
+                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+                       <div style={{ width: '20px', display: 'flex' }}><Icon source={MoneyIcon} tone="subdued" /></div>
+                       <Text variant="headingSm" tone="subdued">{text.kpi_aov}</Text>
+                     </div>
+                     <Text variant="heading2xl" tone="base" alignment="end">{summary.aov.toLocaleString()}</Text>
+                   </BlockStack>
+                 </Card>
+                 <Card>
+                   <BlockStack gap="200">
+                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '4px' }}>
+                       <div style={{ width: '20px', display: 'flex' }}><Icon source={MoneyIcon} tone="subdued" /></div>
+                       <Text variant="headingSm" tone="subdued">{text.kpi_revenue}</Text>
+                     </div>
+                     <Text variant="heading2xl" tone="base" alignment="end">{summary.totalRevenue.toLocaleString()}</Text>
+                   </BlockStack>
+                 </Card>
+
                </InlineGrid>
             </Layout.Section>
 
