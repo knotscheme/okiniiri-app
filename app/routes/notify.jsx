@@ -1,6 +1,7 @@
 import { authenticate } from "../shopify.server";
 import { Resend } from "resend";
 import db from "../db.server";
+console.log("🚀 [VERIFY] 最新の notify.jsx が起動しました！");
 
 const MONTHLY_PLAN_STANDARD = "Standard Plan";
 const MONTHLY_PLAN_PRO = "Pro Plan";
