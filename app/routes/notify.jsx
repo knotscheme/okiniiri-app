@@ -17,7 +17,7 @@ const json = (data, init = {}) => {
 };
 
 export const action = async ({ request }) => {
-  console.log("🚀 [VERIFY] 2026年最新版！"); // 文字を少し変える
+  //console.log("🚀 [VERIFY] 2026年最新版！"); // 文字を少し変える
   try {
     // 1. セキュリティ認証 (App Proxy経由)
     const { session } = await authenticate.public.appProxy(request);
