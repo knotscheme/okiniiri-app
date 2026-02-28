@@ -1,7 +1,7 @@
 {%- comment -%} 
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
-  ★統合修正版: 3段構え翻訳維持 + 爆速トースト通知追加
+  ★最終統合版: 重複削除・爆速トースト・多言語完全維持
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -108,7 +108,6 @@
   </div>
 </div>
 
-{%- comment -%} 通知用トースト（ミニモダール） {%- endcomment -%}
 <div id="wishflow-toast" class="wf-toast-hidden"></div>
 
 <style>
@@ -139,7 +138,6 @@
   .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
   .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
 
-  /* トーストのデザイン */
   #wishflow-toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     background: #121212; color: #fff; padding: 12px 24px; border-radius: 30px;
@@ -161,7 +159,6 @@
     function setGuestList(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
     function getNotifyList() { try { return JSON.parse(localStorage.getItem(NOTIFY_STORAGE_KEY)) || []; } catch (e) { return []; } }
 
-    // トースト表示関数
     function showToast(message) {
       const toast = document.getElementById('wishflow-toast');
       toast.textContent = message;
@@ -169,17 +166,14 @@
       setTimeout(() => { toast.classList.add('wf-toast-hidden'); }, 3000);
     }
 
-    // --- 1. 初期化ロジック (現状の機能を100%維持) ---
     async function init() {
       if ({{ request.design_mode | json }}) { LOADING_MSG.innerText = "Preview Mode"; return; }
-
       let wishlist = [];
       const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
       if (metaRaw) { try { wishlist = [...wishlist, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))]; } catch(e){} }
       wishlist = [...new Set([...wishlist, ...getGuestList()])].filter(h => h);
 
       if (wishlist.length === 0) { LOADING_MSG.innerText = "{{ lang_empty }}"; return; }
-
       const notifyList = getNotifyList();
       const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
       
@@ -196,11 +190,9 @@
         const imgUrl = product.featured_image || '//cdn.shopify.com/s/images/themes/product-1.png';
         const price = (product.price / 100).toLocaleString();
         
-        let badgeHtml = '';
-        let notifyBtnHtml = '';
+        let badgeHtml = '', notifyBtnHtml = '';
         if (!product.available) {
           badgeHtml = `<span class="sold-out-badge">{{ lang_sold_out }}</span>`;
-          // 判定ロジックを強化 (ハンドルか variantId が含まれていれば登録済み)
           const isRegistered = notifyList.some(key => key.includes(product.handle) || key.includes(product.variants[0].id.toString()));
           const btnText = isRegistered ? "{{ lang_subscribed }}" : "{{ lang_notify }}";
           const btnClass = isRegistered ? "notify-btn-small registered" : "notify-btn-small";
@@ -210,64 +202,44 @@
         html += `
           <div class="wishlist-item" id="item-${product.handle}">
             <button class="remove-btn" onclick="removeWish('${product.handle}')" title="{{ lang_remove_tooltip }}">×</button>
-            <a href="${product.url}" class="item-image-link">
-              <img src="${imgUrl}" class="item-image" alt="${product.title}">
-              ${badgeHtml}
-            </a>
+            <a href="${product.url}" class="item-image-link"><img src="${imgUrl}" class="item-image" alt="${product.title}">${badgeHtml}</a>
             <div class="wishlist-item-info">
-              <a href="${product.url}" class="item-name">${product.title}</a>
-              <span class="item-price">¥${price}</span>
+              <a href="${product.url}" class="item-name">${product.title}</a><span class="item-price">¥${price}</span>
               ${notifyBtnHtml}
             </div>
-          </div>
-        `;
+          </div>`;
       }
       if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
     }
 
-    // --- 2. 通知登録ロジック (ここが爆速・楽観的UI版) ---
+    // ★一本化した爆速通知ロジック
     async function sendNotifyRequestList(handle, variantId, email) {
       const btn = document.getElementById(`list-notify-${handle}`);
       if (!btn) return;
-      
       const isRegistered = btn.classList.contains('registered');
       const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
 
-      // 🌟【改善】通信を待たずに、先にボタンの見た目を変えてモダールを出す！
+      // 1. 先に見た目とトーストを変える (楽観的UI)
       let list = getNotifyList();
       const storageKey = `${handle}-${variantId}`;
-      
       if (isRegistered) {
-        // 解除の動き
         list = list.filter(i => i !== storageKey && i !== handle);
         btn.textContent = "{{ lang_notify }}"; btn.classList.remove('registered');
-        if (window.showToast) showToast("{{ lang_success_del }}"); 
+        showToast("{{ lang_success_del }}");
       } else {
-        // 登録の動き
         if (!list.includes(storageKey)) list.push(storageKey);
         btn.textContent = "{{ lang_subscribed }}"; btn.classList.add('registered');
-        if (window.showToast) showToast("{{ lang_success_reg }}"); // 🌟 押した瞬間に表示！
+        showToast("{{ lang_success_reg }}");
       }
       localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
 
-      // 🌟【改善】その後に裏でこっそりサーバーに伝える
+      // 2. 裏でサーバーに通信
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            productHandle: handle, 
-            variantId: variantId, 
-            customerEmail: email, 
-            actionType: isRegistered ? 'delete' : 'create',
-            referrer: window.location.href 
-          })
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
         });
-        // 成功しても失敗しても、すでにUIは変わっているのでユーザーはストレスゼロ
-      } catch (e) {
-        console.error("Background sync failed:", e);
-        // 通信に失敗した場合のみ、コンソールに記録を残す（ユーザーには見せない）
-      }
+      } catch (e) { console.error("Sync failed:", e); }
     }
 
     window.removeWish = async function(handle) {
@@ -293,32 +265,6 @@
       else { sendNotifyRequestList(handle, variantId, email); }
     };
 
-    async function sendNotifyRequestList(handle, variantId, email) {
-      const btn = document.getElementById(`list-notify-${handle}`);
-      const isRegistered = btn.classList.contains('registered');
-      const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
-      try {
-        const res = await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create' }) 
-        });
-        if (res.ok) {
-          let list = getNotifyList();
-          const storageKey = `${handle}-${variantId}`;
-          if (isRegistered) {
-            list = list.filter(i => i !== storageKey && i !== handle);
-            btn.textContent = "{{ lang_notify }}"; btn.classList.remove('registered');
-            showToast("{{ lang_success_del }}"); // 🌟 多言語対応メッセージ
-          } else {
-            if (!list.includes(storageKey)) list.push(storageKey);
-            btn.textContent = "{{ lang_subscribed }}"; btn.classList.add('registered');
-            showToast("{{ lang_success_reg }}"); // 🌟 多言語対応メッセージ
-          }
-          localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
-        }
-      } catch (e) { console.error(e); }
-    }
-
     function showEmailModal(callback) {
       const existing = document.getElementById('wishlist-custom-alert');
       if (existing) existing.remove();
@@ -334,8 +280,7 @@
               <button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer;">{{ lang_close }}</button>
             </div>
           </div>
-        </div>
-      `;
+        </div>`;
       document.body.insertAdjacentHTML('beforeend', html);
       document.getElementById('wishlist-email-submit-list').onclick = function() {
         const email = document.getElementById('wishlist-guest-email-list').value.trim();
