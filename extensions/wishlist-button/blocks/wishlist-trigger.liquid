@@ -1,6 +1,6 @@
 {%- comment -%} 
   商品ページ用: お気に入り＆通知ボタン (wishlist-trigger.liquid)
-  ★統合版: 多言語スマート判定維持 ＋ 爆速トースト通知 ＋ 楽観的UI
+  ★トースト通知のカスタム機能追加版
 {%- endcomment -%}
 
 {%- comment -%} --- 言語設定の取得 --- {%- endcomment -%}
@@ -130,7 +130,6 @@
   <button id="notify-btn-{{ product.handle }}" class="notify-btn" style="display: none;" onclick="event.stopPropagation(); window.requestNotify('{{ product.handle }}')" type="button">{{ text_notify }}</button>
 </div>
 
-{%- comment -%} ★爆速トースト通知用の受け皿 {%- endcomment -%}
 <div id="wishflow-toast-trigger" class="wf-toast-hidden"></div>
 
 <script type="application/json" id="wishlist-config-{{ block.id }}">
@@ -189,10 +188,12 @@
   .wishlist-email-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: #fff !important; color: #333 !important; }
   .wishlist-email-error { color: #d72c0d; font-size: 12px; display: none; margin-top: 5px; }
 
-  /* ★トーストのデザイン（画面上部） */
+  /* ★ トーストの設定をブロック設定から読み込むように変更 */
   #wishflow-toast-trigger {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    background: #121212; color: #fff; padding: 15px 30px; border-radius: 8px;
+    background: {{ block.settings.toast_bg_color | default: '#121212' }};
+    color: {{ block.settings.toast_text_color | default: '#ffffff' }};
+    padding: 15px 30px; border-radius: 8px;
     font-size: 15px; font-weight: bold; z-index: 2147483647; 
     box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     transition: all 0.4s ease; opacity: 1;
@@ -213,7 +214,6 @@
       try { return JSON.parse(el.textContent); } catch (e) { return {}; }
     }
 
-    // ★トースト表示用関数
     function showToast(message) {
       const toast = document.getElementById('wishflow-toast-trigger');
       if (!toast) return;
@@ -222,22 +222,18 @@
       setTimeout(() => { toast.classList.add('wf-toast-hidden'); }, 3000);
     }
 
-    // 🌟 お気に入りボタンの楽観的UI対応
     window.toggleWishlist = async function(handle) {
       const btn = document.getElementById(`wishlist-btn-${handle}`);
       btn.classList.toggle('active');
       const textSpan = document.getElementById(`wishlist-text-${handle}`);
-      
       const isActive = btn.classList.contains('active');
       textSpan.textContent = isActive ? "{{ text_added }}" : "{{ text_add }}";
 
-      // ゲスト用のローカル保存を先に処理（爆速化）
       let list = JSON.parse(localStorage.getItem('wishflow_guest_list') || '[]');
       if (isActive) { if (!list.includes(handle)) list.push(handle); } 
       else { list = list.filter(h => h !== handle); }
       localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
 
-      // ログインユーザーの場合は裏でサーバーと同期
       if (CUSTOMER_ID) {
         try {
           const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
@@ -249,7 +245,6 @@
       }
     };
 
-    // ★メール入力用モダール（これは残す）
     window.showCustomAlert = function(type = 'email_form', callback = null) {
       const existing = document.getElementById('wishlist-custom-alert');
       if (existing) existing.remove();
@@ -277,7 +272,6 @@
       }
     };
 
-    // 🌟 通知ボタンの入り口
     window.requestNotify = async function(handle) {
       let email = "{{ customer.email }}" || localStorage.getItem('wishflow_guest_email');
       if (!email) { 
@@ -287,7 +281,6 @@
       }
     };
 
-    // 🌟 爆速通知ロジック (楽観的UI)
     async function sendNotifyRequest(handle, email) {
       const btn = document.getElementById(`notify-btn-${handle}`);
       const isRegistered = btn.classList.contains('registered');
@@ -295,7 +288,6 @@
       const variantId = "{{ product.selected_or_first_available_variant.id }}";
       const storageKey = `${handle}-${variantId}`;
 
-      // 1. 先に見た目とトーストを変える (爆速化)
       btn.classList.toggle('registered');
       btn.textContent = btn.classList.contains('registered') ? "{{ text_subscribed }}" : "{{ text_notify }}";
       showToast(btn.classList.contains('registered') ? "{{ text_success_notified }}" : "{{ text_success_removed }}");
@@ -305,7 +297,6 @@
       else { list = list.filter(k => k !== storageKey && k !== handle); }
       localStorage.setItem(NOTIFY_KEY, JSON.stringify(list));
 
-      // 2. 裏でこっそりサーバーと通信
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -340,12 +331,10 @@
       if (e.detail.handle === PRODUCT_HANDLE) updateVisibility();
     });
 
-    // 🌟 カスタマイズ画面でプレビューを強制表示する魔法
     {% if request.design_mode and block.settings.show_email_preview %}
-      setTimeout(() => {
-        window.showCustomAlert('email_form');
-      }, 500);
+      setTimeout(() => { window.showCustomAlert('email_form'); }, 500);
     {% endif %}
+
   })();
 </script>
 
@@ -387,7 +376,10 @@
     { "type": "color", "id": "modal_bg_color", "label": "t:trigger.bg_color", "default": "#ffffff" },
     { "type": "range", "id": "modal_bg_opacity", "label": "t:trigger.opacity", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
     { "type": "color", "id": "modal_text_color", "label": "t:trigger.text_color", "default": "#121212" },
-    { "type": "range", "id": "modal_radius", "label": "t:trigger.radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 }
+    { "type": "range", "id": "modal_radius", "label": "t:trigger.radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 },
+    { "type": "header", "content": "トースト通知のデザイン" },
+    { "type": "color", "id": "toast_bg_color", "label": "背景色", "default": "#121212" },
+    { "type": "color", "id": "toast_text_color", "label": "文字色", "default": "#ffffff" }
   ]
 }
 {% endschema %}

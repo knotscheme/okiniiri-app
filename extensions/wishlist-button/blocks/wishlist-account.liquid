@@ -1,7 +1,7 @@
 {%- comment -%} 
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
-  ★最終統合版: 重複削除・爆速トースト・多言語完全維持
+  ★トースト通知デザインのカスタム機能追加版
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -138,9 +138,12 @@
   .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
   .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
 
+  /* ★ トーストの設定をブロック設定から読み込むように変更 */
   #wishflow-toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: #121212; color: #fff; padding: 12px 24px; border-radius: 30px;
+    background: {{ block.settings.toast_bg_color | default: '#121212' }};
+    color: {{ block.settings.toast_text_color | default: '#ffffff' }};
+    padding: 12px 24px; border-radius: 30px;
     font-size: 14px; font-weight: bold; z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     transition: all 0.3s ease; opacity: 1;
   }
@@ -203,14 +206,12 @@
       if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
     }
 
-    // 🚀 通知登録ロジック (これ1つに一本化！重複なし！)
     async function sendNotifyRequestList(handle, variantId, email) {
       const btn = document.getElementById(`list-notify-${handle}`);
       if (!btn) return;
       const isRegistered = btn.classList.contains('registered');
       const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
 
-      // 1. 先に見た目とトーストを変える (楽観的UI)
       let list = getNotifyList();
       const storageKey = `${handle}-${variantId}`;
       if (isRegistered) {
@@ -224,7 +225,6 @@
       }
       localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
 
-      // 2. 裏でサーバーに通信
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -308,7 +308,10 @@
       { "value": "bold", "label": "t:account.bold" }
     ], "default": "normal" },
     { "type": "range", "id": "custom_name_text_size", "label": "t:account.name_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
-    { "type": "range", "id": "custom_price_text_size", "label": "t:account.price_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 }
+    { "type": "range", "id": "custom_price_text_size", "label": "t:account.price_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 },
+    { "type": "header", "content": "トースト通知のデザイン" },
+    { "type": "color", "id": "toast_bg_color", "label": "背景色", "default": "#121212" },
+    { "type": "color", "id": "toast_text_color", "label": "文字色", "default": "#ffffff" }
   ] 
 }
 {% endschema %}
