@@ -31,8 +31,8 @@ export const action = async ({ request }) => {
 
     const safeVariantId = variantId ? String(variantId) : "";
 
-    // --- 【ステータス管理の核心：過去の有効な登録があるか確認】 ---
-    // 「通知済み(NOTIFIED)」以外のデータを検索します
+    // --- 【ステータス管理の核心：過去の登録状況を確認】 ---
+    // 「通知済み(NOTIFIED)」として処理が完結していない最新のデータを探します
     const existing = await db.restockRequest.findFirst({
       where: { 
         shop, productHandle, variantId: safeVariantId, customerEmail,
@@ -40,8 +40,7 @@ export const action = async ({ request }) => {
       }
     });
 
-    // --- 【解除処理】 ---
-    // 物理削除せず「解除中」ラベルを貼ることで、分析データを保護します
+    // --- 【解除処理：物理削除せずラベルを貼る】 ---
     if (actionType === 'delete') {
       if (existing) {
         await db.restockRequest.update({
@@ -52,26 +51,26 @@ export const action = async ({ request }) => {
       return json({ success: true });
     }
 
-    // --- 【登録処理】 ---
+    // --- 【登録処理：再登録時はメールを送らない】 ---
     let shouldSendConfirmEmail = false;
 
     if (!existing) {
-      // 全くの新規、または以前の通知が「完了」している人なら新しくデータ作成
+      // 全くの新規登録、または前回の入荷通知が「完了」している場合は新規作成
       await db.restockRequest.create({
         data: { shop, productHandle, variantId: safeVariantId, customerEmail, referrer: "" }
       });
-      shouldSendConfirmEmail = true; // 新規なので確認メールを送る
+      shouldSendConfirmEmail = true; // 初めてなので確認メールを送る
     } else if (existing.referrer === "UNSUBSCRIBED") {
-      // 「解除中」だった人の再登録なら、ラベルを戻すだけ
+      // 手動で「解除」していた人の再登録なら、ステータスを戻すだけ
       await db.restockRequest.update({
         where: { id: existing.id },
         data: { referrer: "" }
       });
-      shouldSendConfirmEmail = false; // ★ 2回目なので確認メールは送らない
+      shouldSendConfirmEmail = false; // ★ 2回目なのでスパム防止のため送らない
     }
 
     // ==========================================================
-    // 🌟 ここから下が「重い処理」なので、ユーザーを待たせずに裏で実行
+    // 🌟 ユーザーを待たせずに裏側（バックグラウンド）で重い処理を実行
     // ==========================================================
     (async () => {
       try {
@@ -89,7 +88,7 @@ export const action = async ({ request }) => {
           usage = await db.appUsage.update({ where: { shop }, data: { sentCount: 0, lastReset: now } });
         }
 
-        // プランチェック (Shopify GraphQL)
+        // プランチェック (Shopify GraphQLへの重い通信)
         let emailLimit = 50; 
         const offlineSession = await db.session.findFirst({ where: { shop, isOnline: false } });
         if (offlineSession?.accessToken) {
@@ -103,7 +102,7 @@ export const action = async ({ request }) => {
           if (subs.some(s => s.name === MONTHLY_PLAN_STANDARD || s.name === MONTHLY_PLAN_PRO)) emailLimit = 10000;
         }
 
-        // 上限に達していなければメール送信
+        // 上限内であればメール送信
         if (usage.sentCount < emailLimit) {
           const resend = new Resend(process.env.RESEND_API_KEY);
           let senderName = "ショップ事務局", subject = "【再入荷通知登録完了】", lang = "ja";
@@ -119,7 +118,7 @@ export const action = async ({ request }) => {
             if (lang !== "ja" && settings.subject === "【再入荷通知登録完了】") {
               const translations = {
                 en: { sub: "[Subscription Confirmed] Restock Alert", body: 'We have received your request for "{{product_name}}". We will notify you once it arrives.' },
-                "zh-TW": { sub: "【到貨通知登記成功】", body: '我們已收到您對「{{product_name}}」的到貨通知請求。商品到貨後，我們將立即通知您。' },
+                "zh-TW": { sub: "【到貨通知登記成功】", body: '我們已收到您對「{{product_name}}」の到貨通知請求。商品到貨後，我們將立即通知您。' },
                 fr: { sub: "[Confirmation] Alerte de réapprovisionnement", body: 'Nous avons bien reçu votre demande pour "{{product_name}}". Nous vous préviendrons dès son arrivée.' },
                 de: { sub: "[Bestätigung] Benachrichtigung bei Verfügbarkeit", body: 'Wir haben Ihre Anfrage für "{{product_name}}" erhalten. Wir informieren Sie, sobald der Artikel verfügbar ist.' },
                 es: { sub: "[Confirmación] Alerta de reposición", body: 'Hemos recibido su solicitud para "{{product_name}}". Le avisaremos en cuanto esté disponible.' }
@@ -140,7 +139,7 @@ export const action = async ({ request }) => {
       } catch (bgError) { console.error("Background notify error:", bgError); }
     })();
 
-    // 🌟 ユーザーには待たせずに「成功」を即座に返す！
+    // 🌟 登録・解除の完了を即座にブラウザへ返信
     return json({ success: true });
 
   } catch (err) {
