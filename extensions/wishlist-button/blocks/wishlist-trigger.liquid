@@ -270,16 +270,31 @@
       else { list = list.filter(h => h !== handle); }
       localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
 
-      if (CUSTOMER_ID) {
-        try {
-          const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
-          await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle', referrer: document.referrer })
-          });
-        } catch (e) { console.error("Wishlist sync failed:", e); }
-      }
-    };
+      // 🌟 修正：非会員のデータ送信 ＆ LINE流入(utm_source)の正確な計測
+      try {
+        const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+        
+        // URLから「LINE」などの情報を抜き出す
+        const urlParams = new URLSearchParams(window.location.search);
+        const utmSource = urlParams.get('utm_source');
+        let finalReferrer = document.referrer;
+        
+        if (utmSource) {
+          finalReferrer = utmSource; // URLに utm_source=line があればそれを優先
+        } else if (!finalReferrer) {
+          finalReferrer = "Direct"; // どこから来たか不明な場合は Direct
+        }
+
+        await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            customerId: CUSTOMER_ID || "guest", // 非会員は "guest" として記録
+            productHandle: handle, 
+            mode: 'toggle', 
+            referrer: finalReferrer
+          })
+        });
+      } catch (e) { console.error("Wishlist sync failed:", e); }
 
     window.showCustomAlert = function(type = 'email_form', callback = null) {
       const existing = document.getElementById('wishlist-custom-alert');
