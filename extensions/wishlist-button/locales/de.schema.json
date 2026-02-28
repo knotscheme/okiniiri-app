@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Wunschzettel-Seite",
+    "header_text": "Texteinstellungen",
+    "title": "Titel",
+    "desc": "Beschreibung",
+    "align": "Ausrichtung",
+    "left": "Links",
+    "center": "Mitte",
+    "right": "Rechts",
+    "header_design": "Design-Einstellungen",
+    "title_size": "Titelgröße",
+    "title_weight": "Titelstärke",
+    "normal": "Normal",
+    "bold": "Fett",
+    "name_size": "Produktname Größe",
+    "price_size": "Preisgröße",
+    "ratings": { "stars": { "label": "Bewertungen" } }
+  },
+  "trigger": {
+    "name": "Wunschzettel-Button",
+    "header_text": "Button-Texteinstellungen",
+    "add": "Zum Wunschzettel hinzufügen",
+    "added": "Hinzugefügt",
+    "notify": "Benachrichtige mich",
+    "subscribed": "Abonniert",
+    "header_email": "E-Mail-Formular Einstellungen",
+    "email_label": "Beschreibung",
+    "email_placeholder": "Platzhalter",
+    "submit": "Absenden-Button",
+    "close": "Schließen-Button",
+    "header_design": "Wunschzettel-Button Design",
+    "icon_type": "Symboltyp",
+    "heart_outline": "Herz (Umriss)",
+    "heart_solid": "Herz (Gefüllt)",
+    "star": "Stern",
+    "bookmark": "Lesezeichen",
+    "icon_size": "Symbolgröße",
+    "padding": "Innenabstand",
+    "radius": "Eckenradius",
+    "border_width": "Rahmenbreite",
+    "text_size": "Textgröße",
+    "bg_color": "Hintergrundfarbe",
+    "text_color": "Textfarbe",
+    "border_color": "Rahmenfarbe",
+    "header_notify": "Benachrichtigen-Button",
+    "header_modal": "E-Mail-Formular Design",
+    "glass_effect": "Glaseffekt",
+    "opacity": "Deckkraft"
+  },
+  "overlay": {
+    "name": "Überlagerungssymbol",
+    "icon_unactive": "Symbolfarbe (Inaktiv)",
+    "icon_active": "Symbolfarbe (Aktiv)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Bewertungen"
+    }
+  }
+}

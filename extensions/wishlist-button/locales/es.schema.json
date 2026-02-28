@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Página de lista de deseos",
+    "header_text": "Configuración de texto",
+    "title": "Título",
+    "desc": "Descripción",
+    "align": "Alineación",
+    "left": "Izquierda",
+    "center": "Centro",
+    "right": "Derecha",
+    "header_design": "Configuración de diseño",
+    "title_size": "Tamaño del título",
+    "title_weight": "Grosor del título",
+    "normal": "Normal",
+    "bold": "Negrita",
+    "name_size": "Tamaño del nombre del producto",
+    "price_size": "Tamaño del precio",
+    "ratings": { "stars": { "label": "Valoraciones" } }
+  },
+  "trigger": {
+    "name": "Botón de lista de deseos",
+    "header_text": "Configuración del texto del botón",
+    "add": "Añadir a la lista de deseos",
+    "added": "Añadido",
+    "notify": "Notificarme",
+    "subscribed": "Suscrito",
+    "header_email": "Configuración del formulario",
+    "email_label": "Descripción",
+    "email_placeholder": "Marcador de posición",
+    "submit": "Botón Enviar",
+    "close": "Botón Cerrar",
+    "header_design": "Diseño del botón",
+    "icon_type": "Tipo de icono",
+    "heart_outline": "Corazón (Contorno)",
+    "heart_solid": "Corazón (Sólido)",
+    "star": "Estrella",
+    "bookmark": "Marcador",
+    "icon_size": "Tamaño del icono",
+    "padding": "Relleno",
+    "radius": "Radio del borde",
+    "border_width": "Ancho del borde",
+    "text_size": "Tamaño del texto",
+    "bg_color": "Color de fondo",
+    "text_color": "Color del texto",
+    "border_color": "Color del borde",
+    "header_notify": "Diseño del botón de aviso",
+    "header_modal": "Diseño del formulario",
+    "glass_effect": "Efecto de cristal",
+    "opacity": "Opacidad"
+  },
+  "overlay": {
+    "name": "Icono superpuesto",
+    "icon_unactive": "Color del icono (Inactivo)",
+    "icon_active": "Color del icono (Activo)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Valoraciones"
+    }
+  }
+}

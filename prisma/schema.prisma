@@ -1,0 +1,107 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model RestockRequest {
+  id            Int      @id @default(autoincrement())
+  shop          String
+  customerEmail String
+  productHandle String
+  productId     String?
+  variantId     String?
+  referrer      String?  
+  isConverted   Boolean  @default(false) 
+  convertedAt   DateTime?                
+  createdAt     DateTime @default(now())
+  convertedPrice Float? 
+  // ★追加：通知済みフラグ（これがあれば削除しなくて済む）
+  isNotified    Boolean  @default(false)
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  productHandle String
+  customerEmail String
+  createdAt     DateTime @default(now())
+}
+
+model Favorite {
+  id            Int      @id @default(autoincrement())
+  shop          String
+  customerId    String
+  productId     String?  
+  productHandle String
+  referrer      String?  
+  createdAt     DateTime @default(now())
+
+  @@unique([shop, customerId, productHandle])
+}
+
+// メール設定保存用のモデル
+model EmailSetting {
+  id                  Int      @id @default(autoincrement())
+  shop                String   @unique
+  senderName          String   @default("ショップ名事務局")
+  subject             String   @default("入荷通知設定を承りました")
+  body                String   @default("商品「{{product_name}}」の入荷通知設定を承りました。入荷次第、本メールアドレスへご連絡いたします。")
+  restockSubject      String   @default("【再入荷のお知らせ】お待たせいたしました！")
+  restockBody         String   @default("ご登録いただいた商品「{{product_name}}」が再入荷いたしました。数に限りがございますので、お早めにご確認ください。")
+  isRestockEnabled    Boolean  @default(true) 
+  language            String   @default("ja") 
+  updatedAt           DateTime @updatedAt
+}
+
+// アプリの利用状況とプラン管理
+model AppUsage {
+  id                  Int      @id @default(autoincrement())
+  shop                String   @unique
+  sentCount           Int      @default(0)     // 今月の累計配信通数
+  lastReset           DateTime @default(now()) // 月次リセット用日時
+  
+  // ▼▼▼ 今回追加：プラン・Founder権限管理 ▼▼▼
+  plan                String   @default("free") // "free", "pro", "founder" など
+  isFounder           Boolean  @default(false)  // Founderプランの権利を取得済みか
+  founderRegisteredAt DateTime?                 // Founder権利を獲得した日時
+  // ▲▲▲ 追加ここまで ▲▲▲
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ★新規追加：Founderプランのキャンペーン（招待枠）管理
+model FounderCampaign {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique             // 例: "FOUNDER100"
+  totalSlots  Int      @default(100)       // 総枠数（デフォルト100名）
+  usedSlots   Int      @default(0)         // すでに使用された枠数
+  isActive    Boolean  @default(true)      // キャンペーンが有効かどうか
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

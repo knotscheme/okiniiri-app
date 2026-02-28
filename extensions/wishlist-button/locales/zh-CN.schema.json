@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "心愿单页面",
+    "header_text": "文本设置",
+    "title": "标题",
+    "desc": "描述",
+    "align": "对齐方式",
+    "left": "左对齐",
+    "center": "居中",
+    "right": "右对齐",
+    "header_design": "设计设置",
+    "title_size": "标题大小",
+    "title_weight": "标题粗细",
+    "normal": "正常",
+    "bold": "加粗",
+    "name_size": "产品名称大小",
+    "price_size": "价格大小",
+    "ratings": { "stars": { "label": "评价" } }
+  },
+  "trigger": {
+    "name": "心愿单按钮",
+    "header_text": "按钮文本设置",
+    "add": "加入心愿单",
+    "added": "已加入",
+    "notify": "到货通知",
+    "subscribed": "已订阅",
+    "header_email": "邮件表单设置",
+    "email_label": "描述",
+    "email_placeholder": "占位符",
+    "submit": "提交按钮",
+    "close": "关闭按钮",
+    "header_design": "心愿单按钮设计",
+    "icon_type": "图标类型",
+    "heart_outline": "心形 (空心)",
+    "heart_solid": "心形 (实心)",
+    "star": "星形",
+    "bookmark": "书签",
+    "icon_size": "图标大小",
+    "padding": "内边距",
+    "radius": "圆角",
+    "border_width": "边框宽度",
+    "text_size": "文本大小",
+    "bg_color": "背景颜色",
+    "text_color": "文本颜色",
+    "border_color": "边框颜色",
+    "header_notify": "通知按钮设计",
+    "header_modal": "邮件表单设计",
+    "glass_effect": "玻璃效果",
+    "opacity": "不透明度"
+  },
+  "overlay": {
+    "name": "覆盖图标",
+    "icon_unactive": "图标颜色 (未激活)",
+    "icon_active": "图标颜色 (已激活)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "评价"
+    }
+  }
+}

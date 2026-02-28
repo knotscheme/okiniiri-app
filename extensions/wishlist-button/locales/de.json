@@ -1,0 +1,60 @@
+{
+  "account": {
+    "name": "Wunschzettel-Seite",
+    "header_text": "Texteinstellungen",
+    "title": "Titel",
+    "desc": "Beschreibung",
+    "align": "Ausrichtung",
+    "left": "Links",
+    "center": "Zentriert",
+    "right": "Rechts",
+    "header_design": "Design-Einstellungen",
+    "title_size": "Titelgröße",
+    "title_weight": "Titelstärke",
+    "normal": "Normal",
+    "bold": "Fett",
+    "name_size": "Produktname Größe",
+    "price_size": "Preisgröße",
+    "ratings": { "stars": { "label": "Bewertung" } }
+  },
+  "trigger": {
+    "name": "Wunschzettel-Button",
+    "header_text": "Button-Text",
+    "add": "Normal",
+    "added": "Hinzugefügt",
+    "notify": "Benachrichtigung",
+    "subscribed": "Abonniert",
+    "header_email": "E-Mail-Formular",
+    "email_label": "Beschreibung",
+    "email_placeholder": "Platzhalter",
+    "submit": "Senden-Button",
+    "close": "Schließen-Button",
+    "header_design": "Button-Design",
+    "icon_type": "Symboltyp",
+    "heart_outline": "Herz (Linie)",
+    "heart_solid": "Herz (Gefüllt)",
+    "star": "Stern",
+    "bookmark": "Lesezeichen",
+    "icon_size": "Symbolgröße",
+    "padding": "Innenabstand",
+    "radius": "Eckenradius",
+    "border_width": "Rahmenbreite",
+    "text_size": "Schriftgröße",
+    "bg_color": "Hintergrundfarbe",
+    "text_color": "Textfarbe",
+    "border_color": "Rahmenfarbe",
+    "header_notify": "Benachrichtigungs-Button",
+    "header_modal": "Formular-Design", "glass_effect": "Glas-Effekt",
+    "opacity": "Deckkraft"
+  },
+  "overlay": {
+    "name": "Kollektionsseite: Symbol",
+    "icon_unactive": "Symbolfarbe (Normal)",
+    "icon_active": "Symbolfarbe (Aktiv)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Bewertung"
+    }
+  }
+}

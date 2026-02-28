@@ -1,0 +1,163 @@
+{% schema %}
+{
+  "name": "t:overlay.name",
+  "target": "body",
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon_type",
+      "label": "t:trigger.icon_type",
+      "options": [
+        { "value": "outline_heart", "label": "t:trigger.heart_outline" },
+        { "value": "solid_heart", "label": "t:trigger.heart_solid" },
+        { "value": "star", "label": "t:trigger.star" },
+        { "value": "bookmark", "label": "t:trigger.bookmark" }
+      ],
+      "default": "outline_heart"
+    },
+    { "type": "color", "id": "icon_color", "label": "t:overlay.icon_unactive", "default": "#121212" },
+    { "type": "color", "id": "icon_color_active", "label": "t:overlay.icon_active", "default": "#d72c0d" },
+    { "type": "color", "id": "bg_color", "label": "t:trigger.bg_color", "default": "#ffffff" },
+    { "type": "range", "id": "icon_size", "label": "t:trigger.icon_size", "min": 10, "max": 40, "step": 1, "unit": "px", "default": 18 }
+  ]
+}
+{% endschema %}
+
+{% capture icon_svg_overlay %}
+  {% case block.settings.icon_type %}
+    {% when 'outline_heart' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+    {% when 'solid_heart' %}<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    {% when 'star' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+    {% when 'bookmark' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+  {% endcase %}
+{% endcapture %}
+
+<style>
+  .wishflow-overlay-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: calc({{ block.settings.icon_size }}px + 16px);
+    height: calc({{ block.settings.icon_size }}px + 16px);
+    background: {{ block.settings.bg_color | color_modify: 'alpha', 0.95 }};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    border: none;
+    padding: 0;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+    transition: transform 0.2s ease;
+  }
+  .wishflow-overlay-btn:hover { transform: scale(1.1); }
+  .wishflow-overlay-btn svg { width: {{ block.settings.icon_size }}px; height: {{ block.settings.icon_size }}px; color: {{ block.settings.icon_color }}; fill: {% if block.settings.icon_type == 'solid_heart' %}currentColor{% else %}none{% endif %}; stroke: currentColor; stroke-width: 2; pointer-events: none; }
+  .wishflow-overlay-btn.active svg { color: {{ block.settings.icon_color_active }}; fill: currentColor; stroke: {{ block.settings.icon_color_active }}; }
+  body.overflow-hidden .wishflow-overlay-btn, body.menu-open .wishflow-overlay-btn, body.drawer-open .wishflow-overlay-btn { display: none !important; }
+</style>
+
+<script>
+  (function() {
+    const pageType = {{ request.page_type | json }};
+    if (pageType === 'product' || document.querySelector('.wishlist-modern-container')) return;
+
+    const CUSTOMER_ID = "{{ customer.id }}";
+    const STORAGE_KEY = 'wishflow_guest_list';
+
+    function getSafeList() {
+      let list = [];
+      try {
+        list = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        {% if customer %}
+          const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
+          if (metaRaw) list = [...new Set([...list, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))])];
+        {% endif %}
+      } catch(e) {}
+      return list;
+    }
+
+    function renderOverlays() {
+      const currentList = getSafeList();
+      document.querySelectorAll('a[href*="/products/"]').forEach(link => {
+        const path = link.pathname || link.getAttribute('href');
+        const match = path.match(/\/products\/([^\/\?\#]+)/);
+        if (!match) return;
+        const handle = match[1];
+
+        const card = link.closest('.card-wrapper, .product-card-wrapper, .grid__item, .product-item');
+        let target = null;
+        if (card) {
+             target = card.querySelector('.card__media, .card__inner, .media, .product-item__media, .image-wrap');
+             if(!target) target = card;
+        } else {
+             target = link;
+        }
+        
+        if (!target || target.querySelector(`.wishflow-overlay-btn[data-handle="${handle}"]`)) return;
+        if (!target.querySelector('img')) return;
+
+        if (window.getComputedStyle(target).position === 'static') target.style.position = 'relative';
+
+        // ★ 1. 画像枠を透明リンクより上に引き上げる
+        target.style.zIndex = '2';
+
+        // ★ 2. 画像枠自体に「クリックしたら商品ページへ飛ぶ」機能をつける
+        target.style.cursor = 'pointer';
+        target.addEventListener('click', function(e) {
+          // ボタンがクリックされた時は反応しないようにする
+          if (!e.target.closest('.wishflow-overlay-btn')) {
+            window.location.href = link.href;
+          }
+        });
+
+        const btn = document.createElement('button');
+        btn.className = 'wishflow-overlay-btn';
+        btn.setAttribute('data-handle', handle);
+        btn.setAttribute('type', 'button');
+        if (currentList.includes(handle)) btn.classList.add('active');
+        btn.innerHTML = `{{ icon_svg_overlay | strip_newlines }}`;
+        
+        btn.addEventListener('click', function(e) {
+          e.preventDefault(); 
+          e.stopPropagation(); // ★ ボタンのクリックが画像に伝わるのを防ぐ
+          e.stopImmediatePropagation();
+
+          const isActive = this.classList.contains('active');
+          this.classList.toggle('active');
+
+          let list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          if (isActive) list = list.filter(h => h !== handle);
+          else if (!list.includes(handle)) list.push(handle);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+
+          if (CUSTOMER_ID) {
+            const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+            fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle' })
+            }).catch(err => console.error(err));
+          }
+
+          window.dispatchEvent(new CustomEvent('wishflow:updated', { detail: { handle: handle, active: !isActive } }));
+          return false;
+        });
+
+        target.appendChild(btn);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(renderOverlays, 300);
+      window.addEventListener('wishflow:updated', (e) => {
+        document.querySelectorAll(`.wishflow-overlay-btn[data-handle="${e.detail.handle}"]`).forEach(b => {
+          if (e.detail.active) b.classList.add('active'); else b.classList.remove('active');
+        });
+      });
+    });
+    
+    new MutationObserver(() => renderOverlays()).observe(document.body, { childList: true, subtree: true });
+  })();
+</script>

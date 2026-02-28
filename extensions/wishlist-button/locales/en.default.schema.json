@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Wishlist Page",
+    "header_text": "Text Settings",
+    "title": "Title",
+    "desc": "Description",
+    "align": "Alignment",
+    "left": "Left",
+    "center": "Center",
+    "right": "Right",
+    "header_design": "Design Settings",
+    "title_size": "Title Size",
+    "title_weight": "Title Weight",
+    "normal": "Normal",
+    "bold": "Bold",
+    "name_size": "Product Name Size",
+    "price_size": "Price Size",
+    "ratings": { "stars": { "label": "Ratings" } }
+  },
+  "trigger": {
+    "name": "Wishlist Button",
+    "header_text": "Button Text Settings",
+    "add": "Add to Wishlist",
+    "added": "Added",
+    "notify": "Notify Me",
+    "subscribed": "Subscribed",
+    "header_email": "Email Form Settings",
+    "email_label": "Description",
+    "email_placeholder": "Placeholder",
+    "submit": "Submit Button",
+    "close": "Close Button",
+    "header_design": "Wishlist Button Design",
+    "icon_type": "Icon Type",
+    "heart_outline": "Heart (Outline)",
+    "heart_solid": "Heart (Solid)",
+    "star": "Star",
+    "bookmark": "Bookmark",
+    "icon_size": "Icon Size",
+    "padding": "Padding",
+    "radius": "Border Radius",
+    "border_width": "Border Width",
+    "text_size": "Text Size",
+    "bg_color": "Background Color",
+    "text_color": "Text Color",
+    "border_color": "Border Color",
+    "header_notify": "Notify Button Design",
+    "header_modal": "Email Form Design",
+    "glass_effect": "Glass Effect",
+    "opacity": "Opacity"
+  },
+  "overlay": {
+    "name": "Overlay Icon",
+    "icon_unactive": "Icon Color (Unactive)",
+    "icon_active": "Icon Color (Active)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Ratings"
+    }
+  }
+}

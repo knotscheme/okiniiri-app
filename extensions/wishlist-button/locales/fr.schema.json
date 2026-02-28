@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Page de la liste de souhaits",
+    "header_text": "Paramètres de texte",
+    "title": "Titre",
+    "desc": "Description",
+    "align": "Alignement",
+    "left": "Gauche",
+    "center": "Centre",
+    "right": "Droite",
+    "header_design": "Paramètres de conception",
+    "title_size": "Taille du titre",
+    "title_weight": "Épaisseur du titre",
+    "normal": "Normal",
+    "bold": "Gras",
+    "name_size": "Taille du nom du produit",
+    "price_size": "Taille du prix",
+    "ratings": { "stars": { "label": "Évaluations" } }
+  },
+  "trigger": {
+    "name": "Bouton de liste de souhaits",
+    "header_text": "Paramètres du texte du bouton",
+    "add": "Ajouter à la liste de souhaits",
+    "added": "Ajouté",
+    "notify": "M'informer",
+    "subscribed": "Abonné",
+    "header_email": "Paramètres du formulaire d'e-mail",
+    "email_label": "Description",
+    "email_placeholder": "Espace réservé",
+    "submit": "Bouton de soumission",
+    "close": "Bouton Fermer",
+    "header_design": "Conception du bouton",
+    "icon_type": "Type d'icône",
+    "heart_outline": "Cœur (Contour)",
+    "heart_solid": "Cœur (Plein)",
+    "star": "Étoile",
+    "bookmark": "Signet",
+    "icon_size": "Taille de l'icône",
+    "padding": "Rembourrage",
+    "radius": "Rayon de bordure",
+    "border_width": "Largeur de bordure",
+    "text_size": "Taille du texte",
+    "bg_color": "Couleur de fond",
+    "text_color": "Couleur du texte",
+    "border_color": "Couleur de la bordure",
+    "header_notify": "Bouton de notification",
+    "header_modal": "Conception du formulaire",
+    "glass_effect": "Effet de verre",
+    "opacity": "Opacité"
+  },
+  "overlay": {
+    "name": "Icône de superposition",
+    "icon_unactive": "Couleur (Inactif)",
+    "icon_active": "Couleur (Actif)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Évaluations"
+    }
+  }
+}

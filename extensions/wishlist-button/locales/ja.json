@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "お気に入りリストページ",
+    "header_text": "テキスト設定",
+    "title": "タイトル",
+    "desc": "説明文",
+    "align": "配置",
+    "left": "左寄せ",
+    "center": "中央寄せ",
+    "right": "右寄せ",
+    "header_design": "デザイン設定",
+    "title_size": "タイトルサイズ",
+    "title_weight": "タイトルの太さ",
+    "normal": "普通",
+    "bold": "太字",
+    "name_size": "商品名サイズ",
+    "price_size": "価格サイズ",
+    "ratings": { "stars": { "label": "評価" } }
+  },
+  "trigger": {
+    "name": "お気に入りボタン",
+    "header_text": "ボタンテキスト設定",
+    "add": "未追加時",
+    "added": "追加済み",
+    "notify": "入荷通知 (ボタン)",
+    "subscribed": "入荷通知 (登録済み)",
+    "header_email": "メールフォーム設定",
+    "email_label": "説明文",
+    "email_placeholder": "プレースホルダー",
+    "submit": "送信ボタン",
+    "close": "閉じるボタン",
+    "header_design": "お気に入りボタンのデザイン",
+    "icon_type": "アイコンの形",
+    "heart_outline": "ハート (白抜き)",
+    "heart_solid": "ハート (塗りつぶし)",
+    "star": "星",
+    "bookmark": "しおり (保存)",
+    "icon_size": "アイコンサイズ",
+    "padding": "余白 (パディング)",
+    "radius": "角丸",
+    "border_width": "線の太さ",
+    "text_size": "文字サイズ",
+    "bg_color": "背景色",
+    "text_color": "文字色",
+    "border_color": "枠線の色",
+    "header_notify": "入荷通知ボタンのデザイン",
+    "header_modal": "メールフォームのデザイン",
+    "glass_effect": "すりガラス効果",
+    "opacity": "透明度"
+  },
+  "overlay": {
+    "name": "一覧ページ: オーバーレイアイコン",
+    "icon_unactive": "アイコン色 (未追加)",
+    "icon_active": "アイコン色 (追加済み)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "評価"
+    }
+  }
+}

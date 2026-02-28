@@ -1,0 +1,336 @@
+{%- comment -%} 
+  --------------------------------------------------------------------------------
+  お気に入りリストページ (wishlist-account.liquid)
+  ★統合修正: 
+    1. 3段構えの自動翻訳 (完全版)
+    2. 不要なデバッグ表示の削除
+    3. 重複コードの整理
+  --------------------------------------------------------------------------------
+{%- endcomment -%}
+
+{%- comment -%} 
+  ★最強の3段構え言語判定ロジック 
+  1. アプリ管理画面の設定
+  2. ストアの表示言語
+  3. デフォルト (日本語)
+{%- endcomment -%}
+{%- assign store_lang = request.locale.iso_code | slice: 0, 2 -%}
+{%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
+{%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
+
+{%- case global_lang -%}
+  {%- when 'en' -%}
+    {%- assign lang_title = 'Wishlist' -%}
+    {%- assign lang_desc = 'Products you have saved.' -%}
+    {%- assign lang_empty = 'Your wishlist is currently empty.' -%}
+    {%- assign lang_loading = 'Loading...' -%}
+    {%- assign lang_sold_out = 'Sold Out' -%}
+    {%- assign lang_remove_confirm = 'Remove this item from your wishlist?' -%}
+    {%- assign lang_remove_tooltip = 'Remove' -%}
+    {%- assign lang_notify = 'Notify Me' -%}
+    {%- assign lang_subscribed = 'Notification Set' -%}
+    {%- assign lang_email_label = 'Enter email for restock alerts' -%}
+    {%- assign lang_email_placeholder = 'example@email.com' -%}
+    {%- assign lang_submit = 'Register' -%}
+    {%- assign lang_email_error = 'Please enter a valid email address.' -%}
+    {%- assign lang_close = 'Close' -%}
+  {%- when 'zh', 'zh-TW' -%}
+    {%- assign lang_title = '收藏清單' -%}
+    {%- assign lang_desc = '您保存的商品列表。' -%}
+    {%- assign lang_empty = '您的收藏清單目前是空的。' -%}
+    {%- assign lang_loading = '載入中...' -%}
+    {%- assign lang_sold_out = '已售完' -%}
+    {%- assign lang_remove_confirm = '確定要從收藏中刪除嗎？' -%}
+    {%- assign lang_remove_tooltip = '刪除' -%}
+    {%- assign lang_notify = '到貨通知我' -%}
+    {%- assign lang_subscribed = '已訂閱通知' -%}
+    {%- assign lang_email_label = '輸入接收通知的電子郵件' -%}
+    {%- assign lang_email_placeholder = 'example@email.com' -%}
+    {%- assign lang_submit = '提交' -%}
+    {%- assign lang_email_error = '請輸入正確的電子郵件地址。' -%}
+    {%- assign lang_close = '關閉' -%}
+  {%- when 'fr' -%}
+    {%- assign lang_title = 'Liste de souhaits' -%}
+    {%- assign lang_desc = 'Les produits que vous avez enregistrés.' -%}
+    {%- assign lang_empty = 'Votre liste de souhaits est vide.' -%}
+    {%- assign lang_sold_out = 'Épuisé' -%}
+    {%- assign lang_notify = 'M’informer' -%}
+    {%- assign lang_subscribed = 'Notification activée' -%}
+    {%- assign lang_submit = 'S’inscrire' -%}
+    {%- assign lang_close = 'Fermer' -%}
+  {%- when 'de' -%}
+    {%- assign lang_title = 'Wunschliste' -%}
+    {%- assign lang_desc = 'Ihre gespeicherten Produkte.' -%}
+    {%- assign lang_empty = 'Ihre Wunschliste ist leer.' -%}
+    {%- assign lang_sold_out = 'Ausverkauft' -%}
+    {%- assign lang_notify = 'Benachrichtigen' -%}
+    {%- assign lang_subscribed = 'Benachrichtigung aktiv' -%}
+    {%- assign lang_submit = 'Registrieren' -%}
+    {%- assign lang_close = 'Schließen' -%}
+  {%- when 'es' -%}
+    {%- assign lang_title = 'Lista de deseos' -%}
+    {%- assign lang_desc = 'Productos que has guardado.' -%}
+    {%- assign lang_empty = 'Tu lista de deseos está vacía.' -%}
+    {%- assign lang_sold_out = 'Agotado' -%}
+    {%- assign lang_notify = 'Avisarme' -%}
+    {%- assign lang_subscribed = 'Notificación activa' -%}
+    {%- assign lang_submit = 'Registrar' -%}
+    {%- assign lang_close = 'Cerrar' -%}
+  {%- else -%}
+    {%- comment -%} 日本語: カスタマイズ設定を反映 {%- endcomment -%}
+    {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
+    {%- assign lang_desc = block.settings.text_desc | default: 'あなたが保存した商品の一覧です' -%}
+    {%- assign lang_empty = 'お気に入りはまだありません' -%}
+    {%- assign lang_loading = '読み込み中...' -%}
+    {%- assign lang_sold_out = '売り切れ' -%}
+    {%- assign lang_remove_confirm = 'お気に入りから削除しますか？' -%}
+    {%- assign lang_remove_tooltip = '削除する' -%}
+    {%- assign lang_notify = '入荷通知を受け取る' -%}
+    {%- assign lang_subscribed = '入荷通知登録済み' -%}
+    {%- assign lang_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
+    {%- assign lang_email_placeholder = 'example@email.com' -%}
+    {%- assign lang_submit = '登録する' -%}
+    {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
+    {%- assign lang_close = '閉じる' -%}
+{%- endcase -%}
+
+{%- comment -%} 各種フォールバック設定 {%- endcomment -%}
+{%- assign lang_loading = lang_loading | default: 'Loading...' -%}
+{%- assign lang_remove_confirm = lang_remove_confirm | default: 'Remove?' -%}
+{%- assign lang_remove_tooltip = lang_remove_tooltip | default: 'Remove' -%}
+{%- assign lang_email_label = lang_email_label | default: 'Enter email' -%}
+{%- assign lang_email_placeholder = lang_email_placeholder | default: 'email@example.com' -%}
+{%- assign lang_email_error = lang_email_error | default: 'Invalid email.' -%}
+{%- assign lang_close = lang_close | default: 'Close' -%}
+
+<div class="wishlist-modern-container wishlist-container-{{ block.id }}">
+  <header class="wishlist-header">
+    <h1 class="wishlist-title">{{ lang_title | escape }}</h1>
+    <div class="wishlist-guide">
+      <p>{{ lang_desc | escape }}</p>
+    </div>
+  </header>
+
+  <div id="wishlist-items" class="wishlist-grid-list">
+    <p id="wishlist-loading-msg" class="loading-msg">{{ lang_loading }}</p>
+  </div>
+</div>
+
+<style>
+  .wishlist-container-{{ block.id }} {
+    max-width: 900px; margin: 40px auto; padding: 0 20px; color: #121212;
+    --header-align: {{ block.settings.header_align }};
+    --title-size: {{ block.settings.title_size }}px;
+    --title-weight: {{ block.settings.title_weight }};
+    --title-color: {{ block.settings.title_color }};
+    --desc-size: {{ block.settings.desc_size }}px;
+    --desc-weight: {{ block.settings.desc_weight }};
+    --desc-color: {{ block.settings.desc_color }};
+    --text-size-name: {{ block.settings.custom_name_text_size }}px;
+    --text-size-price: {{ block.settings.custom_price_text_size }}px;
+    --modal-btn-bg: #121212;
+    --modal-btn-text: #ffffff;
+  }
+  .wishlist-container-{{ block.id }} .wishlist-header { text-align: var(--header-align); margin-bottom: 30px; }
+  .wishlist-container-{{ block.id }} .wishlist-title { font-size: var(--title-size); font-weight: var(--title-weight); color: var(--title-color); letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0; margin-bottom: 10px; }
+  .wishlist-container-{{ block.id }} .wishlist-guide p { font-size: var(--desc-size); font-weight: var(--desc-weight); color: var(--desc-color); margin: 0; }
+  .wishlist-grid-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px 20px; border-top: 1px solid #e8e8e8; padding-top: 30px; min-height: 200px; }
+  @media (min-width: 768px) { .wishlist-grid-list { grid-template-columns: repeat(4, 1fr); } }
+  .wishlist-item { position: relative; display: flex; flex-direction: column; text-align: center; }
+  .item-image-link { position: relative; display: block; aspect-ratio: 1/1; background: #f9f9f9; margin-bottom: 12px; overflow: hidden; border: 1px solid #eee; }
+  .item-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+  .item-image-link:hover .item-image { transform: scale(1.05); }
+  .sold-out-badge { position: absolute; bottom: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: #fff; padding: 4px 8px; font-size: 10px; font-weight: bold; }
+  .wishlist-container-{{ block.id }} .item-name { font-size: var(--text-size-name); text-decoration: none; color: inherit; font-weight: bold; margin-bottom: 4px; display: block; line-height: 1.4; }
+  .wishlist-container-{{ block.id }} .item-price { font-size: var(--text-size-price); color: #666; }
+  .remove-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.9); border: 1px solid #ddd; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.2s; color: #666; }
+  .remove-btn:hover { background: #ffeded; color: #d72c0d; border-color: #d72c0d; }
+  .loading-msg { grid-column: 1 / -1; text-align: center; padding: 50px; color: #999; }
+  .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+  .notify-btn-small:hover { background: #fff5f5; }
+  .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
+</style>
+
+<script>
+  (function() {
+    const STORAGE_KEY = 'wishflow_guest_list';
+    const NOTIFY_STORAGE_KEY = 'restock_notification_list';
+    const CUSTOMER_ID = "{{ customer.id }}";
+    const CONTAINER = document.getElementById('wishlist-items');
+    const LOADING_MSG = document.getElementById('wishlist-loading-msg');
+
+    function getGuestList() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { return []; } }
+    function setGuestList(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+    function getNotifyList() { try { return JSON.parse(localStorage.getItem(NOTIFY_STORAGE_KEY)) || []; } catch (e) { return []; } }
+
+    async function init() {
+      if ({{ request.design_mode | json }}) { LOADING_MSG.innerText = "Preview Mode"; return; }
+
+      let wishlist = [];
+      const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
+      if (metaRaw) { try { wishlist = [...wishlist, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))]; } catch(e){} }
+      wishlist = [...wishlist, ...getGuestList()];
+      wishlist = [...new Set(wishlist)].filter(h => h);
+
+      if (wishlist.length === 0) { LOADING_MSG.innerText = "{{ lang_empty }}"; return; }
+
+      const notifyList = getNotifyList();
+      const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+      
+      const products = await Promise.all(wishlist.map(async (handle) => {
+        try {
+          const res = await fetch(`${rootPath}products/${handle.trim()}.js`.replace('//', '/'));
+          return res.ok ? await res.json() : null;
+        } catch (err) { return null; }
+      }));
+
+      let html = '';
+      for (const product of products) {
+        if (!product) continue;
+        const imgUrl = product.featured_image || '//cdn.shopify.com/s/images/themes/product-1.png';
+        const price = (product.price / 100).toLocaleString();
+        
+        let badgeHtml = '';
+        let notifyBtnHtml = '';
+        if (!product.available) {
+          badgeHtml = `<span class="sold-out-badge">{{ lang_sold_out }}</span>`;
+          const isRegistered = notifyList.some(key => key.includes(product.handle));
+          const btnText = isRegistered ? "{{ lang_subscribed }}" : "{{ lang_notify }}";
+          const btnClass = isRegistered ? "notify-btn-small registered" : "notify-btn-small";
+          notifyBtnHtml = `<button class="${btnClass}" id="list-notify-${product.handle}" onclick="window.requestNotifyFromList('${product.handle}', ${product.variants[0].id})">${btnText}</button>`;
+        }
+
+        html += `
+          <div class="wishlist-item" id="item-${product.handle}">
+            <button class="remove-btn" onclick="removeWish('${product.handle}')" title="{{ lang_remove_tooltip }}">×</button>
+            <a href="${product.url}" class="item-image-link">
+              <img src="${imgUrl}" class="item-image" alt="${product.title}">
+              ${badgeHtml}
+            </a>
+            <div class="wishlist-item-info">
+              <a href="${product.url}" class="item-name">${product.title}</a>
+              <span class="item-price">¥${price}</span>
+              ${notifyBtnHtml}
+            </div>
+          </div>
+        `;
+      }
+      if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
+    }
+
+    // --- 削除機能 ---
+    window.removeWish = async function(handle) {
+      if (!confirm("{{ lang_remove_confirm }}")) return;
+      const el = document.getElementById(`item-${handle}`);
+      if (el) el.remove();
+      if (document.querySelectorAll('.wishlist-item').length === 0) CONTAINER.innerHTML = `<p class="loading-msg">{{ lang_empty }}</p>`;
+
+      let list = getGuestList();
+      list = list.filter(h => h !== handle);
+      setGuestList(list);
+
+      if (CUSTOMER_ID) {
+        try {
+          const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+          await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'delete' })
+          });
+        } catch(e) { console.error(e); }
+      }
+    };
+
+    // --- 通知機能 ---
+    window.requestNotifyFromList = async function(handle, variantId) {
+      let email = "{{ customer.email }}" || localStorage.getItem('wishflow_guest_email');
+      if (!email) { showEmailModal((inputEmail) => sendNotifyRequestList(handle, variantId, inputEmail)); } 
+      else { sendNotifyRequestList(handle, variantId, email); }
+    };
+
+    async function sendNotifyRequestList(handle, variantId, email) {
+      const btn = document.getElementById(`list-notify-${handle}`);
+      const isRegistered = btn.classList.contains('registered');
+      try {
+        const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+        const res = await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href }) 
+        });
+        if (res.ok) {
+          let list = getNotifyList();
+          const storageKey = `${handle}-${variantId}`;
+          if (isRegistered) {
+            list = list.filter(i => i !== storageKey && i !== handle);
+            btn.textContent = "{{ lang_notify }}"; btn.classList.remove('registered');
+          } else {
+            if (!list.includes(storageKey)) list.push(storageKey);
+            btn.textContent = "{{ lang_subscribed }}"; btn.classList.add('registered');
+          }
+          localStorage.setItem(NOTIFY_STORAGE_KEY, JSON.stringify(list));
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function showEmailModal(callback) {
+      const existing = document.getElementById('wishlist-custom-alert');
+      if (existing) existing.remove();
+      const savedEmail = localStorage.getItem('wishflow_guest_email') || '';
+      const html = `
+        <div id="wishlist-custom-alert" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 99999;">
+          <div style="background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <div class="wishlist-email-form">
+              <label style="font-weight:bold; margin-bottom:4px; display:block; text-align:left;">{{ lang_email_label }}</label>
+              <input type="email" id="wishlist-guest-email-list" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" value="${savedEmail}" placeholder="{{ lang_email_placeholder }}">
+              <div id="wishlist-email-error-list" style="color:red; font-size:12px; display:none; margin-top:5px;"></div>
+              <button id="wishlist-email-submit-list" style="width: 100%; padding: 10px; background: #121212; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">{{ lang_submit }}</button>
+              <button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer;">{{ lang_close }}</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', html);
+      document.getElementById('wishlist-email-submit-list').onclick = function() {
+        const email = document.getElementById('wishlist-guest-email-list').value.trim();
+        if (!email || !email.includes('@')) { 
+          const err = document.getElementById('wishlist-email-error-list');
+          err.innerText = "{{ lang_email_error }}"; err.style.display = 'block'; return; 
+        }
+        localStorage.setItem('wishflow_guest_email', email);
+        callback(email); document.getElementById('wishlist-custom-alert').remove();
+      };
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+    window.addEventListener('wishflow:updated', (e) => {
+      // リストページを開いたまま、別タブ等で更新されたらリストを再描画する
+      init(); 
+    });
+  })();
+</script>
+
+{% schema %}
+{ 
+  "name": "t:account.name", 
+  "target": "section", 
+  "settings": [
+    { "type": "header", "content": "t:account.header_text" },
+    { "type": "text", "id": "text_title", "label": "t:account.title", "default": "お気に入りリスト" },
+    { "type": "text", "id": "text_desc", "label": "t:account.desc", "default": "あなたが保存した商品の一覧です" },
+    { "type": "select", "id": "header_align", "label": "t:account.align", "options": [
+      { "value": "left", "label": "t:account.left" },
+      { "value": "center", "label": "t:account.center" },
+      { "value": "right", "label": "t:account.right" }
+    ], "default": "center" },
+    { "type": "color", "id": "title_color", "label": "t:trigger.text_color", "default": "#121212" },
+    { "type": "color", "id": "desc_color", "label": "t:trigger.text_color", "default": "#666666" },
+    { "type": "header", "content": "t:account.header_design" },
+    { "type": "range", "id": "title_size", "label": "t:account.title_size", "min": 16, "max": 40, "step": 1, "unit": "px", "default": 24 },
+    { "type": "select", "id": "title_weight", "label": "t:account.title_weight", "options": [
+      { "value": "normal", "label": "t:account.normal" },
+      { "value": "bold", "label": "t:account.bold" }
+    ], "default": "normal" },
+    { "type": "range", "id": "custom_name_text_size", "label": "t:account.name_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
+    { "type": "range", "id": "custom_price_text_size", "label": "t:account.price_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 }
+  ] 
+}
+{% endschema %}

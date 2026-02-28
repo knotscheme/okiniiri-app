@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Page de la liste de souhaits",
+    "header_text": "Paramètres de texte",
+    "title": "Titre",
+    "desc": "Description",
+    "align": "Alignement",
+    "left": "Gauche",
+    "center": "Centre",
+    "right": "Droite",
+    "header_design": "Paramètres de conception",
+    "title_size": "Taille du titre",
+    "title_weight": "Poids du titre",
+    "normal": "Normal",
+    "bold": "Gras",
+    "name_size": "Taille du nom",
+    "price_size": "Taille du prix",
+    "ratings": { "stars": { "label": "Note" } }
+  },
+  "trigger": {
+    "name": "Bouton Favoris",
+    "header_text": "Texte du bouton",
+    "add": "Normal",
+    "added": "Ajouté",
+    "notify": "Demande de notification",
+    "subscribed": "Abonné",
+    "header_email": "Formulaire d'e-mail",
+    "email_label": "Description",
+    "email_placeholder": "Espace réservé",
+    "submit": "Bouton Envoyer",
+    "close": "Bouton Fermer",
+    "header_design": "Design du bouton",
+    "icon_type": "Type d'icône",
+    "heart_outline": "Cœur (Ligne)",
+    "heart_solid": "Cœur (Plein)",
+    "star": "Étoile",
+    "bookmark": "Signet",
+    "icon_size": "Taille d'icône",
+    "padding": "Marge interne",
+    "radius": "Rayon",
+    "border_width": "Épaisseur de bordure",
+    "text_size": "Taille de police",
+    "bg_color": "Couleur de fond",
+    "text_color": "Couleur de texte",
+    "border_color": "Couleur de bordure",
+    "header_notify": "Bouton de notification",
+    "header_modal": "Design du formulaire",
+    "glass_effect": "Effet verre",
+    "opacity": "Opacité"
+  },
+  "overlay": {
+    "name": "Page de collection : Icône",
+    "icon_unactive": "Couleur (Normal)",
+    "icon_active": "Couleur (Ajouté)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Note"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "account": {
+    "name": "Página de Lista de Deseos",
+    "header_text": "Configuración de texto",
+    "title": "Título",
+    "desc": "Descripción",
+    "align": "Alineación",
+    "left": "Izquierda",
+    "center": "Centro",
+    "right": "Derecha",
+    "header_design": "Configuración de diseño",
+    "title_size": "Tamaño del título",
+    "title_weight": "Grosor del título",
+    "normal": "Normal",
+    "bold": "Negrita",
+    "name_size": "Tamaño del nombre",
+    "price_size": "Tamaño del precio",
+    "ratings": { "stars": { "label": "Calificación" } }
+  },
+  "trigger": {
+    "name": "Botón de Deseos",
+    "header_text": "Texto del botón",
+    "add": "Normal",
+    "added": "Añadido",
+    "notify": "Notificar",
+    "subscribed": "Suscrito",
+    "header_email": "Formulario de correo",
+    "email_label": "Descripción",
+    "email_placeholder": "Marcador",
+    "submit": "Botón Enviar",
+    "close": "Botón Cerrar",
+    "header_design": "Diseño del botón",
+    "icon_type": "Tipo de icono",
+    "heart_outline": "Corazón (Línea)",
+    "heart_solid": "Corazón (Sólido)",
+    "star": "Estrella",
+    "bookmark": "Marcador",
+    "icon_size": "Tamaño del icono",
+    "padding": "Relleno",
+    "radius": "Radio",
+    "border_width": "Ancho del borde",
+    "text_size": "Tamaño de fuente",
+    "bg_color": "Color de fondo",
+    "text_color": "Color de texto",
+    "border_color": "Color de borde",
+    "header_notify": "Botón de notificación",
+    "header_modal": "Diseño del formulario",
+    "glass_effect": "Efecto cristal",
+    "opacity": "Opacidad"
+  },
+  "overlay": {
+    "name": "Página de Colección: Icono",
+    "icon_unactive": "Color de icono (Normal)",
+    "icon_active": "Color de icono (Añadido)"
+  },
+  "ratings": {
+    "stars": {
+      "label": "Calificación"
+    }
+  }
+}

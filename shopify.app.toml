@@ -1,0 +1,35 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "d5a2b4fe7645b78225028d862181cf66"
+name = "WishFlow"
+application_url = "https://okiniiri-app.onrender.com"
+embedded = true
+handle = "okiniiri-app"
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "shirakawa-2.myshopify.com"
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "inventory_levels/update", "orders/create" ]
+  uri = "/api/webhooks"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_inventory,read_orders,read_products,write_customers,write_products"
+
+[auth]
+redirect_urls = [
+  "https://okiniiri-app.onrender.com/auth/callback",
+  "https://okiniiri-app.onrender.com/auth/shopify/callback",
+  "https://okiniiri-app.onrender.com/api/auth/callback" 
+]
+
+[app_proxy]
+url = "https://okiniiri-app.onrender.com"
+subpath = "wishlist"
+prefix = "apps"
+

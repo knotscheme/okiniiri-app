@@ -1,0 +1,359 @@
+{%- comment -%} 
+  商品ページ用: お気に入り＆通知ボタン (wishlist-trigger.liquid)
+  ★修正ポイント: 
+    既存のブロックに保存されている「古い日本語デフォルト値」を検出し、
+    アプリ設定の言語（中国語など）が選ばれている場合は、その日本語を無視して翻訳を適用するロジックを追加。
+{%- endcomment -%}
+
+{%- comment -%} --- 言語設定の取得 --- {%- endcomment -%}
+{%- assign store_lang = request.locale.iso_code | slice: 0, 2 -%}
+{%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
+{%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
+
+{%- comment -%} --- 判定用：デフォルト値の定義 (英語と日本語) --- {%- endcomment -%}
+{%- assign def_add_en = 'Add to Wishlist' -%}
+{%- assign def_add_ja = 'お気に入りに追加' -%}
+{%- assign def_added_en = 'In Wishlist' -%}
+{%- assign def_added_ja = '追加済み' -%}
+{%- assign def_notify_en = 'Notify Me When Available' -%}
+{%- assign def_notify_ja = '入荷通知を受け取る' -%}
+{%- assign def_subscribed_en = 'Notification Set' -%}
+{%- assign def_subscribed_ja = '入荷通知登録済み' -%}
+{%- assign def_submit_en = 'Register' -%}
+{%- assign def_submit_ja = '登録する' -%}
+
+{%- comment -%} 
+  ★スマート判定ロジック
+  入力欄の値が「空」または「英語デフォルト」または「古い日本語デフォルト」の場合、
+  「デフォルト状態」とみなしてアプリ設定の言語を優先適用する。
+  それ以外（ユーザーが独自に書き換えた場合）は、その入力値を優先する。
+{%- endcomment -%}
+
+{%- assign val_add = block.settings.text_add -%}
+{%- if val_add == blank or val_add == def_add_en or val_add == def_add_ja -%}
+  {%- assign use_translation = true -%}
+{%- else -%}
+  {%- assign use_translation = false -%}
+{%- endif -%}
+
+{%- if use_translation -%}
+  {%- case global_lang -%}
+    {%- when 'zh', 'zh-TW' -%}
+      {%- assign text_add = '加入收藏' -%}
+      {%- assign text_added = '已收藏' -%}
+      {%- assign text_notify = '到貨通知我' -%}
+      {%- assign text_subscribed = '已訂閱通知' -%}
+      {%- assign text_email_label = '輸入接收通知的電子郵件' -%}
+      {%- assign text_email_placeholder = 'example@email.com' -%}
+      {%- assign text_submit = '提交' -%}
+      {%- assign text_close = '關閉' -%}
+      {%- assign text_success_notified = '通知已設定' -%}
+      {%- assign text_success_removed = '通知已取消' -%}
+      {%- assign text_error_email = '請輸入正確的電子郵件地址' -%}
+    {%- when 'en' -%}
+      {%- assign text_add = 'Add to Wishlist' -%}
+      {%- assign text_added = 'In Wishlist' -%}
+      {%- assign text_notify = 'Notify Me When Available' -%}
+      {%- assign text_subscribed = 'Notification Set' -%}
+      {%- assign text_email_label = 'Enter email for restock alerts' -%}
+      {%- assign text_email_placeholder = 'example@email.com' -%}
+      {%- assign text_submit = 'Register' -%}
+      {%- assign text_close = 'Close' -%}
+      {%- assign text_success_notified = 'Notification Set' -%}
+      {%- assign text_success_removed = 'Notification Canceled' -%}
+      {%- assign text_error_email = 'Please enter a valid email address' -%}
+    {%- when 'fr' -%}
+      {%- assign text_add = 'Ajouter aux favoris' -%}
+      {%- assign text_added = 'Dans les favoris' -%}
+      {%- assign text_notify = "M'informer du réapprovisionnement" -%}
+      {%- assign text_subscribed = 'Notification configurée' -%}
+      {%- assign text_submit = "S'inscrire" -%}
+      {%- assign text_close = 'Fermer' -%}
+      {%- assign text_success_notified = 'Enregistré' -%}
+      {%- assign text_success_removed = 'Supprimé' -%}
+      {%- assign text_error_email = 'Email invalide' -%}
+    {%- when 'de' -%}
+      {%- assign text_add = 'Auf die Wunschliste' -%}
+      {%- assign text_added = 'In der Wunschliste' -%}
+      {%- assign text_notify = 'Benachrichtigen, wenn verfügbar' -%}
+      {%- assign text_subscribed = 'Benachrichtigung eingestellt' -%}
+      {%- assign text_submit = 'Registrieren' -%}
+      {%- assign text_close = 'Schließen' -%}
+      {%- assign text_success_notified = 'Gespeichert' -%}
+      {%- assign text_success_removed = 'Entfernt' -%}
+      {%- assign text_error_email = 'Ungültige E-Mail' -%}
+    {%- when 'es' -%}
+      {%- assign text_add = 'Añadir a deseos' -%}
+      {%- assign text_added = 'En lista de deseos' -%}
+      {%- assign text_notify = 'Avísame cuando esté disponible' -%}
+      {%- assign text_subscribed = 'Notificación configurada' -%}
+      {%- assign text_submit = 'Registrar' -%}
+      {%- assign text_close = 'Cerrar' -%}
+      {%- assign text_success_notified = 'Guardado' -%}
+      {%- assign text_success_removed = 'Eliminado' -%}
+      {%- assign text_error_email = 'Email inválido' -%}
+    {%- else -%}
+      {%- comment -%} 日本語フォールバック {%- endcomment -%}
+      {%- assign text_add = 'お気に入りに追加' -%}
+      {%- assign text_added = '追加済み' -%}
+      {%- assign text_notify = '入荷通知を受け取る' -%}
+      {%- assign text_subscribed = '入荷通知登録済み' -%}
+      {%- assign text_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
+      {%- assign text_email_placeholder = 'example@email.com' -%}
+      {%- assign text_submit = '登録する' -%}
+      {%- assign text_close = '閉じる' -%}
+      {%- assign text_success_notified = '通知を設定しました' -%}
+      {%- assign text_success_removed = '通知を解除しました' -%}
+      {%- assign text_error_email = '正しいメールアドレスを入力してください' -%}
+  {%- endcase -%}
+{%- else -%}
+  {%- comment -%} ユーザーが独自に入力したテキストを優先使用 {%- endcomment -%}
+  {%- assign text_add = block.settings.text_add -%}
+  {%- assign text_added = block.settings.text_added -%}
+  {%- assign text_notify = block.settings.text_notify -%}
+  {%- assign text_subscribed = block.settings.text_subscribed -%}
+  {%- assign text_email_label = block.settings.text_email_label -%}
+  {%- assign text_email_placeholder = block.settings.text_email_placeholder -%}
+  {%- assign text_submit = block.settings.text_submit -%}
+  {%- assign text_close = block.settings.text_close -%}
+  {%- assign text_success_notified = 'Saved' -%}
+  {%- assign text_success_removed = 'Removed' -%}
+  {%- assign text_error_email = 'Invalid email' -%}
+{%- endif -%}
+
+{%- comment -%} ★透明度の計算ロジック維持 {%- endcomment -%}
+{%- assign modal_bg_color = block.settings.modal_bg_color | default: '#ffffff' -%}
+{%- assign modal_opacity_decimal = block.settings.modal_bg_opacity | default: 85 | divided_by: 100.0 -%}
+{%- assign modal_bg_rgba = modal_bg_color | color_modify: 'alpha', modal_opacity_decimal -%}
+
+<div class="wishlist-app-container wishlist-app-container-{{ block.id }}" id="wishflow-root-{{ block.id }}">
+  <button type="button" class="wishlist-button" id="wishlist-btn-{{ product.handle }}" onclick="event.stopPropagation(); window.toggleWishlist('{{ product.handle }}')">
+    <span class="wishlist-icon">
+      {% case block.settings.icon_type %}
+        {% when 'outline_heart' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        {% when 'solid_heart' %}<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        {% when 'star' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        {% when 'bookmark' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+      {% endcase %}
+    </span>
+    <span class="wishlist-text" id="wishlist-text-{{ product.handle }}">{{ text_add }}</span>
+  </button>
+  <button id="notify-btn-{{ product.handle }}" class="notify-btn" style="display: none;" onclick="event.stopPropagation(); window.requestNotify('{{ product.handle }}')" type="button">{{ text_notify }}</button>
+</div>
+
+<script type="application/json" id="wishlist-config-{{ block.id }}">
+{
+  "textEmailLabel": "{{ text_email_label | escape }}",
+  "textEmailPlaceholder": "{{ text_email_placeholder | escape }}",
+  "textSubmit": "{{ text_submit | escape }}",
+  "textClose": "{{ text_close | escape }}",
+  "textErrorEmail": "{{ text_error_email | escape }}",
+  "modalBgRgba": "{{ modal_bg_rgba }}", 
+  "modalText": "{{ block.settings.modal_text_color | default: '#121212' }}",
+  "modalRadius": "{{ block.settings.modal_radius | default: 12 }}px",
+  "modalGlass": {{ block.settings.modal_glass_effect | json }},
+  "submitBg": "{{ block.settings.notify_bg_color | default: '#ffffff' }}",
+  "submitText": "{{ block.settings.notify_text_color | default: '#d72c0d' }}",
+  "submitBorderColor": "{{ block.settings.notify_border_color | default: '#d72c0d' }}",
+  "submitBorderWidth": "1px",
+  "submitRadius": "{{ block.settings.custom_border_radius | default: 4 }}px"
+}
+</script>
+
+<script type="application/json" id="VariantData-{{ block.id }}">{{ product.variants | json }}</script>
+<script type="application/json" id="DefaultVariant-{{ block.id }}">{{ product.selected_or_first_available_variant.id | json }}</script>
+
+<style>
+  .wishlist-app-container-{{ block.id }} {
+    display: flex; flex-direction: column; gap: 10px; margin: 20px 0;
+    --btn-bg: {{ block.settings.btn_bg_color }};
+    --text-color: {{ block.settings.text_color }};
+    --border-color: {{ block.settings.border_color }};
+    --notify-bg: {{ block.settings.notify_bg_color }};
+    --notify-text: {{ block.settings.notify_text_color }};
+    --notify-border: {{ block.settings.notify_border_color }};
+    --text-size: {{ block.settings.custom_text_size }}px;
+    --text-weight: {{ block.settings.text_weight }};
+    --border-width: {{ block.settings.custom_border_width }}px;
+    --border-radius: {{ block.settings.custom_border_radius }}px;
+    --btn-padding: {{ block.settings.custom_btn_padding }}px;
+    --icon-size: {{ block.settings.custom_icon_size }}px;
+    --icon-color: {{ block.settings.icon_color }};
+  }
+  .wishlist-app-container-{{ block.id }} .wishlist-button, 
+  .wishlist-app-container-{{ block.id }} .notify-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    padding: var(--btn-padding) 12px; cursor: pointer; background: var(--btn-bg);
+    color: var(--text-color); font-size: var(--text-size); font-weight: var(--text-weight);
+    border: var(--border-width) solid var(--border-color); border-radius: var(--border-radius);
+    transition: all 0.2s ease; box-sizing: border-box;
+  }
+  .wishlist-app-container-{{ block.id }} .wishlist-button.active { background: var(--text-color); color: var(--btn-bg); border-color: var(--text-color); opacity: 0.9; }
+  .wishlist-app-container-{{ block.id }} .wishlist-icon svg { width: var(--icon-size); height: var(--icon-size); color: var(--icon-color); }
+  .wishlist-app-container-{{ block.id }} .wishlist-button.active .wishlist-icon svg { color: var(--btn-bg); fill: currentColor; }
+  .wishlist-app-container-{{ block.id }} .notify-btn { background: var(--notify-bg); color: var(--notify-text); border-color: var(--notify-border); }
+  .wishlist-app-container-{{ block.id }} .notify-btn.registered { background: #eee !important; color: #888 !important; border-color: #ccc !important; }
+  .wishlist-email-form { display: flex; flex-direction: column; gap: 12px; width: 100%; text-align: left; }
+  .wishlist-email-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: #fff !important; color: #333 !important; }
+  .wishlist-email-error { color: #d72c0d; font-size: 12px; display: none; margin-top: 5px; }
+</style>
+
+<script>
+  (function() {
+    const PRODUCT_HANDLE = "{{ product.handle }}";
+    const CUSTOMER_ID = "{{ customer.id }}";
+    const BLOCK_ID = "{{ block.id }}";
+    const NOTIFY_KEY = 'restock_notification_list'; 
+
+    function getDesignSettings() {
+      const el = document.getElementById(`wishlist-config-${BLOCK_ID}`);
+      try { return JSON.parse(el.textContent); } catch (e) { return {}; }
+    }
+
+    window.toggleWishlist = async function(handle) {
+      const btn = document.getElementById(`wishlist-btn-${handle}`);
+      btn.classList.toggle('active');
+      const textSpan = document.getElementById(`wishlist-text-${handle}`);
+      textSpan.textContent = btn.classList.contains('active') ? "{{ text_added }}" : "{{ text_add }}";
+
+      if (CUSTOMER_ID) {
+        const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+        await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId: CUSTOMER_ID, productHandle: handle, mode: 'toggle', referrer: document.referrer })
+        });
+      } else {
+        let list = JSON.parse(localStorage.getItem('wishflow_guest_list') || '[]');
+        if (btn.classList.contains('active')) { if (!list.includes(handle)) list.push(handle); } 
+        else { list = list.filter(h => h !== handle); }
+        localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
+      }
+    };
+
+    window.showCustomAlert = function(message, type = 'alert', callback = null) {
+      const existing = document.getElementById('wishlist-custom-alert');
+      if (existing) existing.remove();
+      const settings = getDesignSettings();
+      const bgStyle = `background-color: ${settings.modalBgRgba};`;
+      const glassEffect = settings.modalGlass ? 'backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);' : '';
+      const submitBtnStyle = `background-color: ${settings.submitBg} !important; color: ${settings.submitText} !important; border: ${settings.submitBorderWidth} solid ${settings.submitBorderColor} !important; border-radius: ${settings.submitRadius} !important; width: 100% !important; padding: 12px !important; font-weight: bold !important; cursor: pointer !important; margin-top: 10px !important; display: block !important; box-sizing: border-box !important; font-size: 14px !important;`;
+
+      let contentHtml = '';
+      if (type === 'email_form') {
+        contentHtml = `<div class="wishlist-email-form"><label style="font-weight:bold; margin-bottom:4px; display:block;">${settings.textEmailLabel}</label><input type="email" id="wishlist-guest-email" class="wishlist-email-input" placeholder="${settings.textEmailPlaceholder}"><div id="wishlist-email-error" class="wishlist-email-error"></div><button id="wishlist-email-submit-btn" style="${submitBtnStyle}">${settings.textSubmit}</button><button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:inherit; cursor:pointer; font-size:12px; text-decoration:underline; opacity:0.7;">${settings.textClose}</button></div>`;
+      } else {
+        contentHtml = `<p style="margin: 0 0 20px 0; font-size: 15px; font-weight: bold;">${message}</p><button onclick="document.getElementById('wishlist-custom-alert').remove()" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 4px; border:none; cursor:pointer;">${settings.textClose}</button>`;
+      }
+      const html = `<div id="wishlist-custom-alert" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 2147483647;"><div style="${bgStyle} ${glassEffect} padding: 24px; border-radius: ${settings.modalRadius}; width: 90%; max-width: 320px; text-align: center; color: ${settings.modalText}; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">${contentHtml}</div></div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+
+      if (type === 'email_form' && callback) {
+        document.getElementById('wishlist-email-submit-btn').onclick = function() {
+          const email = document.getElementById('wishlist-guest-email').value.trim();
+          if (!email || !email.includes('@')) { 
+            const errorEl = document.getElementById('wishlist-email-error');
+            errorEl.style.display = 'block'; 
+            errorEl.innerText = settings.textErrorEmail;
+            return; 
+          }
+          localStorage.setItem('wishflow_guest_email', email); callback(email); document.getElementById('wishlist-custom-alert').remove();
+        };
+      }
+    };
+
+    window.requestNotify = async function(handle) {
+      let email = "{{ customer.email }}" || localStorage.getItem('wishflow_guest_email');
+      if (!email) { window.showCustomAlert("", 'email_form', (inputEmail) => sendNotifyRequest(handle, inputEmail)); } else { sendNotifyRequest(handle, email); }
+    };
+
+    async function sendNotifyRequest(handle, email) {
+      const btn = document.getElementById(`notify-btn-${handle}`);
+      const isRegistered = btn.classList.contains('registered');
+      const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
+      const res = await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productHandle: handle, variantId: "{{ product.selected_or_first_available_variant.id }}", customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
+      });
+      if (res.ok) {
+        btn.classList.toggle('registered');
+        btn.textContent = btn.classList.contains('registered') ? "{{ text_subscribed }}" : "{{ text_notify }}";
+        window.showCustomAlert(btn.classList.contains('registered') ? "{{ text_success_notified }}" : "{{ text_success_removed }}");
+
+        const variantId = "{{ product.selected_or_first_available_variant.id }}";
+        const storageKey = `${handle}-${variantId}`;
+        let list = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '[]');
+        if (btn.classList.contains('registered')) { if (!list.includes(storageKey)) list.push(storageKey); } 
+        else { list = list.filter(k => k !== storageKey && k !== handle); }
+        localStorage.setItem(NOTIFY_KEY, JSON.stringify(list));
+      }
+    }
+
+    function updateVisibility() {
+      const notifyBtn = document.getElementById(`notify-btn-${PRODUCT_HANDLE}`);
+      if (!notifyBtn) return;
+      const isAvailable = {{ product.available | json }};
+      notifyBtn.style.display = isAvailable ? 'none' : 'flex';
+      const notifyList = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '[]');
+      const variantId = "{{ product.selected_or_first_available_variant.id }}";
+      const storageKey = `${PRODUCT_HANDLE}-${variantId}`;
+      if (notifyList.includes(storageKey) || notifyList.includes(PRODUCT_HANDLE)) {
+        notifyBtn.classList.add('registered');
+        notifyBtn.textContent = "{{ text_subscribed }}";
+      }
+      const guestList = JSON.parse(localStorage.getItem('wishflow_guest_list') || '[]');
+      const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
+      const serverList = metaRaw ? (Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw)) : [];
+      if (guestList.includes(PRODUCT_HANDLE) || serverList.includes(PRODUCT_HANDLE)) {
+        document.getElementById(`wishlist-btn-${PRODUCT_HANDLE}`).classList.add('active');
+        document.getElementById(`wishlist-text-${PRODUCT_HANDLE}`).textContent = "{{ text_added }}";
+      }
+    }
+    document.addEventListener("DOMContentLoaded", updateVisibility);
+    window.addEventListener('wishflow:updated', (e) => {
+      if (e.detail.handle === PRODUCT_HANDLE) updateVisibility();
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "t:trigger.name",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    { "type": "header", "content": "t:trigger.header_text" },
+    { "type": "text", "id": "text_add", "label": "t:trigger.add", "default": "お気に入りに追加" },
+    { "type": "text", "id": "text_added", "label": "t:trigger.added", "default": "追加済み" },
+    { "type": "text", "id": "text_notify", "label": "t:trigger.notify", "default": "入荷通知を受け取る" },
+    { "type": "text", "id": "text_subscribed", "label": "t:trigger.subscribed", "default": "入荷通知登録済み" },
+    { "type": "header", "content": "t:trigger.header_email" },
+    { "type": "text", "id": "text_email_label", "label": "t:trigger.email_label", "default": "入荷通知を受け取るメールアドレスを入力" },
+    { "type": "text", "id": "text_email_placeholder", "label": "t:trigger.email_placeholder", "default": "example@email.com" },
+    { "type": "text", "id": "text_submit", "label": "t:trigger.submit", "default": "登録する" },
+    { "type": "text", "id": "text_close", "label": "t:trigger.close", "default": "閉じる" },
+    { "type": "header", "content": "t:trigger.header_design" },
+    { "type": "select", "id": "icon_type", "label": "t:trigger.icon_type", "options": [ { "value": "outline_heart", "label": "t:trigger.heart_outline" }, { "value": "solid_heart", "label": "t:trigger.heart_solid" }, { "value": "star", "label": "t:trigger.star" }, { "value": "bookmark", "label": "t:trigger.bookmark" } ], "default": "outline_heart" },
+    { "type": "range", "id": "custom_icon_size", "label": "t:trigger.icon_size", "min": 10, "max": 40, "step": 1, "unit": "px", "default": 18 },
+    { "type": "color", "id": "icon_color", "label": "t:trigger.text_color", "default": "#000000" },
+    { "type": "range", "id": "custom_btn_padding", "label": "t:trigger.padding", "min": 5, "max": 30, "step": 1, "unit": "px", "default": 12 },
+    { "type": "range", "id": "custom_border_radius", "label": "t:trigger.radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 4 },
+    { "type": "range", "id": "custom_border_width", "label": "t:trigger.border_width", "min": 0, "max": 5, "step": 1, "unit": "px", "default": 1 },
+    { "type": "range", "id": "custom_text_size", "label": "t:trigger.text_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
+    { "type": "select", "id": "text_weight", "label": "t:account.title_weight", "options": [ { "value": "normal", "label": "t:account.normal" }, { "value": "bold", "label": "t:account.bold" } ], "default": "bold" },
+    { "type": "color", "id": "btn_bg_color", "label": "t:trigger.bg_color", "default": "#ffffff" },
+    { "type": "color", "id": "text_color", "label": "t:trigger.text_color", "default": "#000000" },
+    { "type": "color", "id": "border_color", "label": "t:trigger.border_color", "default": "#000000" },
+    { "type": "header", "content": "t:trigger.header_notify" },
+    { "type": "color", "id": "notify_bg_color", "label": "t:trigger.bg_color", "default": "#ffffff" },
+    { "type": "color", "id": "notify_text_color", "label": "t:trigger.text_color", "default": "#d72c0d" },
+    { "type": "color", "id": "notify_border_color", "label": "t:trigger.border_color", "default": "#d72c0d" },
+    { "type": "header", "content": "t:trigger.header_modal" },
+    { "type": "checkbox", "id": "show_email_preview", "label": "プレビューを表示", "default": false },
+    { "type": "checkbox", "id": "modal_glass_effect", "label": "t:trigger.glass_effect", "default": true },
+    { "type": "color", "id": "modal_bg_color", "label": "t:trigger.bg_color", "default": "#ffffff" },
+    { "type": "range", "id": "modal_bg_opacity", "label": "t:trigger.opacity", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
+    { "type": "color", "id": "modal_text_color", "label": "t:trigger.text_color", "default": "#121212" },
+    { "type": "range", "id": "modal_radius", "label": "t:trigger.radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 }
+  ]
+}
+{% endschema %}
