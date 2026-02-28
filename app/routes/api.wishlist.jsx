@@ -27,44 +27,69 @@ export const action = async ({ request }) => {
 
     if (!productHandle) return customJson({ error: "Missing handle" }, { status: 400 });
 
+    // 🌟 ログで何が届いているか監視（デバッグ用）
+    console.log(`🔹 受信データ - ID: "${customerId}", Handle: ${productHandle}, Mode: ${mode}`);
+
+    // 🌟 【超・厳重判定】IDが空、null、undefined、または "guest" で始まれば100%ゲスト
+    const isGuest = !customerId || 
+                    customerId === "" || 
+                    customerId === "null" || 
+                    customerId === "undefined" || 
+                    String(customerId).startsWith("guest");
+
+    let actionType = (mode === 'delete') ? 'removed' : 'added';
     let newList = [];
-    let actionType = 'added';
-
-    // 🌟 最強のゲスト判定：IDが「空」「null文字」「guestで始まる」のどれかならゲスト！
-    const isGuest = !customerId || customerId === "" || customerId === "null" || String(customerId).startsWith("guest");
 
     // =========================================================================
-    // 1. Shopify会員データ（Metafield）への保存
+    // 1. Prisma連携（分析DB）を「先」にやる！
     // =========================================================================
-    if (!isGuest) {
+    if (shopDomain) {
       try {
-        console.log("👤 会員として処理中... ID:", customerId);
+        const dbId = isGuest ? (customerId || "guest_anonymous") : String(customerId);
+        if (actionType === 'added') {
+          const existing = await prisma.favorite.findFirst({
+            where: { shop: shopDomain, customerId: dbId, productHandle: String(productHandle) }
+          });
+          if (!existing) {
+            await prisma.favorite.create({
+              data: { shop: shopDomain, customerId: dbId, productHandle: String(productHandle) }
+            });
+            console.log("✅ [DB] 分析保存に成功！");
+          }
+        } else {
+          await prisma.favorite.deleteMany({
+            where: { shop: shopDomain, customerId: dbId, productHandle: String(productHandle) }
+          });
+          console.log("✅ [DB] 分析から削除成功！");
+        }
+      } catch (dbErr) {
+        console.error("⚠️ [DB] Prisma Error (Skipped):", dbErr.message);
+      }
+    }
+
+    // =========================================================================
+    // 2. Shopify会員データ（Metafield）への保存は「後」で、かつエラーを隔離！
+    // =========================================================================
+    if (!isGuest && customerId) {
+      try {
+        console.log("👤 会員としてShopifyに保存を試みます...");
         const customerQuery = await admin.graphql(
           `query getCustomer($id: ID!) {
             customer(id: $id) { metafield(namespace: "custom", key: "wishlist") { value } }
           }`,
           { variables: { id: `gid://shopify/Customer/${customerId}` } }
         );
-
         const customerData = await customerQuery.json();
         const currentValue = customerData.data?.customer?.metafield?.value;
-        
         if (currentValue) {
           try { newList = JSON.parse(currentValue); } catch (e) { newList = []; }
         }
-        if (!Array.isArray(newList)) newList = [];
-
+        
+        // リスト更新ロジック（会員用）
         if (mode === 'delete') {
           newList = newList.filter(h => h !== productHandle);
-          actionType = 'removed';
         } else {
-          if (newList.includes(productHandle)) {
-            newList = newList.filter(h => h !== productHandle);
-            actionType = 'removed';
-          } else {
-            newList.push(productHandle);
-            actionType = 'added';
-          }
+          if (!newList.includes(productHandle)) newList.push(productHandle);
         }
 
         await admin.graphql(
@@ -80,53 +105,17 @@ export const action = async ({ request }) => {
             }
           }
         );
+        console.log("✅ [Shopify] 会員メタフィールド更新成功");
       } catch (shopifyErr) {
-        console.error("⚠️ Shopify Metafield Error (Skipping):", shopifyErr.message);
-      }
-    } else {
-      // 🌟 ゲストの場合
-      console.log("🤖 ゲストとして処理中...");
-      actionType = (mode === 'delete') ? 'removed' : 'added';
-    }
-
-    // =========================================================================
-    // 2. Prisma連携（分析DB）
-    // =========================================================================
-    if (shopDomain) {
-      try {
-        // IDが空の場合は一時的な匿名IDを付与
-        const dbId = isGuest ? (customerId || "guest_anonymous") : String(customerId);
-
-        if (actionType === 'added') {
-          const existing = await prisma.favorite.findFirst({
-            where: { shop: shopDomain, customerId: dbId, productHandle: String(productHandle) }
-          });
-
-          if (!existing) {
-            await prisma.favorite.create({
-              data: { 
-                shop: shopDomain,
-                customerId: dbId, 
-                productHandle: String(productHandle)
-              }
-            });
-            console.log("✅ [DB] 保存成功！:", productHandle);
-          }
-        } else {
-          await prisma.favorite.deleteMany({
-            where: { shop: shopDomain, customerId: dbId, productHandle: String(productHandle) }
-          });
-          console.log("✅ [DB] 削除成功！:", productHandle);
-        }
-      } catch (dbError) {
-        console.error("⚠️ Prisma Error:", dbError.message);
+        // ここでエラーが出ても、Prismaが成功していれば数字は増えます！
+        console.error("⚠️ [Shopify] Metafield Error (Ignore):", shopifyErr.message);
       }
     }
 
-    return customJson({ success: true, list: newList, action: actionType });
+    return customJson({ success: true, action: actionType });
 
   } catch (err) {
-    console.error("❌ Critical API Error:", err);
+    console.error("❌ [API] Critical Error:", err);
     return customJson({ error: "Server Error" }, { status: 500 });
   }
 };
