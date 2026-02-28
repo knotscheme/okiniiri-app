@@ -165,14 +165,23 @@ export const loader = async ({ request }) => {
     } catch (e) { permissionError = true; }
   }
 
+  // 🌟 修正後：ドメインだけでなく、UTMパラメータの短い文字列も判定に加えます
   const getSourceCategory = (referrer) => {
     if (!referrer) return txt.direct;
     const ref = referrer.toLowerCase();
-    if (ref.includes('instagram.com')) return 'Instagram';
-    if (ref.includes('facebook.com') || ref.includes('fb.')) return 'Facebook';
-    if (ref.includes('line.me')) return 'LINE';
+    
+    // LINE判定を強化（line.me ドメイン、または utm_source の "line" に対応）
+    if (ref === 'line' || ref.includes('line.me')) return 'LINE';
+    
+    // Instagram判定を強化
+    if (ref === 'instagram' || ref.includes('instagram.com')) return 'Instagram';
+    
+    // Facebook判定を強化
+    if (ref === 'facebook' || ref.includes('facebook.com') || ref.includes('fb.')) return 'Facebook';
+    
     if (ref.includes('google.')) return 'Google';
     if (ref.includes('yahoo.') || ref.includes('bing.')) return txt.organic;
+    
     return txt.other;
   };
 
