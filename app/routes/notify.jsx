@@ -1,8 +1,6 @@
 import { authenticate } from "../shopify.server";
 import { Resend } from "resend";
 import db from "../db.server";
-console.log("🚀 [VERIFY] 最新の notify.jsx が起動しました！");
-
 const MONTHLY_PLAN_STANDARD = "Standard Plan";
 const MONTHLY_PLAN_PRO = "Pro Plan";
 
@@ -19,6 +17,7 @@ const json = (data, init = {}) => {
 };
 
 export const action = async ({ request }) => {
+  console.log("🚀 [VERIFY] 2026年最新版！"); // 文字を少し変える
   try {
     // 1. セキュリティ認証 (App Proxy経由)
     const { session } = await authenticate.public.appProxy(request);
