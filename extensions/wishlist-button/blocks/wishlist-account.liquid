@@ -1,7 +1,7 @@
 {%- comment -%} 
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
-  ★トースト通知デザインのカスタム機能追加版
+  ★商品カードのデザインカスタム＆ダミープレビュー機能追加版
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -110,6 +110,19 @@
 
 <div id="wishflow-toast" class="wf-toast-hidden"></div>
 
+{%- assign t_opacity = block.settings.toast_bg_opacity | default: 85 -%}
+{%- assign t_alpha = t_opacity | divided_by: 100.0 -%}
+{%- assign t_bg_raw = block.settings.toast_bg_color | default: '#121212' -%}
+{%- assign t_bg_rgba = t_bg_raw | color_modify: 'alpha', t_alpha -%}
+
+{%- assign modal_bg_color = block.settings.modal_bg_color | default: '#ffffff' -%}
+{%- assign modal_opacity_decimal = block.settings.modal_bg_opacity | default: 85 | divided_by: 100.0 -%}
+{%- assign modal_bg_rgba = modal_bg_color | color_modify: 'alpha', modal_opacity_decimal -%}
+{%- assign modal_text_color = block.settings.modal_text_color | default: '#121212' -%}
+{%- assign modal_radius = block.settings.modal_radius | default: 12 -%}
+{%- assign modal_btn_bg = block.settings.modal_btn_bg_color | default: '#121212' -%}
+{%- assign modal_btn_text = block.settings.modal_btn_text_color | default: '#ffffff' -%}
+
 <style>
   .wishlist-container-{{ block.id }} {
     max-width: 900px; margin: 40px auto; padding: 0 20px; color: #121212;
@@ -120,8 +133,14 @@
     --desc-size: {{ block.settings.desc_size }}px;
     --desc-weight: {{ block.settings.desc_weight }};
     --desc-color: {{ block.settings.desc_color }};
-    --text-size-name: {{ block.settings.custom_name_text_size }}px;
-    --text-size-price: {{ block.settings.custom_price_text_size }}px;
+    /* 商品カードのカスタム変数 */
+    --name-size: {{ block.settings.custom_name_text_size }}px;
+    --name-weight: {{ block.settings.name_weight }};
+    --price-size: {{ block.settings.custom_price_text_size }}px;
+    --price-weight: {{ block.settings.price_weight }};
+    --card-notify-bg: {{ block.settings.card_notify_bg_color }};
+    --card-notify-text: {{ block.settings.card_notify_text_color }};
+    --card-notify-border: {{ block.settings.card_notify_border_color }};
   }
   .wishlist-container-{{ block.id }} .wishlist-header { text-align: var(--header-align); margin-bottom: 30px; }
   .wishlist-container-{{ block.id }} .wishlist-title { font-size: var(--title-size); font-weight: var(--title-weight); color: var(--title-color); letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 10px 0; }
@@ -132,16 +151,18 @@
   .item-image-link { position: relative; display: block; aspect-ratio: 1/1; background: #f9f9f9; margin-bottom: 12px; overflow: hidden; border: 1px solid #eee; }
   .item-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
   .sold-out-badge { position: absolute; bottom: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: #fff; padding: 4px 8px; font-size: 10px; font-weight: bold; }
-  .wishlist-container-{{ block.id }} .item-name { font-size: var(--text-size-name); text-decoration: none; color: inherit; font-weight: bold; margin-bottom: 4px; display: block; line-height: 1.4; }
-  .wishlist-container-{{ block.id }} .item-price { font-size: var(--text-size-price); color: #666; }
+  .wishlist-container-{{ block.id }} .item-name { font-size: var(--name-size); font-weight: var(--name-weight); text-decoration: none; color: inherit; margin-bottom: 4px; display: block; line-height: 1.4; }
+  .wishlist-container-{{ block.id }} .item-price { font-size: var(--price-size); font-weight: var(--price-weight); color: #666; }
   .remove-btn { position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.9); border: 1px solid #ddd; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: 0.2s; color: #666; }
-  .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-  .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
+  .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: var(--card-notify-bg); border: 1px solid var(--card-notify-border); color: var(--card-notify-text); font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+  .notify-btn-small.registered { background: #eee !important; border-color: #ccc !important; color: #888 !important; }
 
-  /* ★ トーストの設定をブロック設定から読み込むように変更 */
   #wishflow-toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: {{ block.settings.toast_bg_color | default: '#121212' }};
+    background-color: {{ t_bg_rgba }};
+    {% if block.settings.toast_glass_effect %}
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    {% endif %}
     color: {{ block.settings.toast_text_color | default: '#ffffff' }};
     padding: 12px 24px; border-radius: 30px;
     font-size: 14px; font-weight: bold; z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -170,7 +191,23 @@
     }
 
     async function init() {
-      if ({{ request.design_mode | json }}) { LOADING_MSG.innerText = "Preview Mode"; return; }
+      // 🌟 エディタ画面でのプレビュー制御（ダミー商品の表示）
+      {% if request.design_mode %}
+        {% if block.settings.show_card_preview %}
+          const dummyHtml = `
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-1.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 A</a><span class="item-price">¥5,000</span><button class="notify-btn-small">{{ lang_notify }}</button></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-2.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 B</a><span class="item-price">¥12,000</span></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-3.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 C</a><span class="item-price">¥8,500</span><button class="notify-btn-small registered">{{ lang_subscribed }}</button></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-4.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 D</a><span class="item-price">¥3,200</span></div></div>
+          `;
+          CONTAINER.innerHTML = dummyHtml;
+          return;
+        {% else %}
+          if (LOADING_MSG) LOADING_MSG.innerText = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）";
+          return;
+        {% endif %}
+      {% endif %}
+
       let wishlist = [];
       const metaRaw = {{ customer.metafields.custom.wishlist.value | json }};
       if (metaRaw) { try { wishlist = [...wishlist, ...(Array.isArray(metaRaw) ? metaRaw : JSON.parse(metaRaw))]; } catch(e){} }
@@ -260,15 +297,23 @@
       const existing = document.getElementById('wishlist-custom-alert');
       if (existing) existing.remove();
       const savedEmail = localStorage.getItem('wishflow_guest_email') || '';
+      
+      const glassEffect = {% if block.settings.modal_glass_effect %}'backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);'{% else %}''{% endif %};
+      const bgColor = '{{ modal_bg_rgba }}';
+      const textColor = '{{ modal_text_color }}';
+      const radius = '{{ modal_radius }}px';
+      const btnBg = '{{ modal_btn_bg }}';
+      const btnText = '{{ modal_btn_text }}';
+
       const html = `
         <div id="wishlist-custom-alert" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 99999;">
-          <div style="background: #fff; padding: 24px; border-radius: 12px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+          <div style="background-color: ${bgColor}; color: ${textColor}; border-radius: ${radius}; ${glassEffect} padding: 24px; width: 90%; max-width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
             <div class="wishlist-email-form">
               <label style="font-weight:bold; margin-bottom:4px; display:block; text-align:left;">{{ lang_email_label }}</label>
-              <input type="email" id="wishlist-guest-email-list" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" value="${savedEmail}" placeholder="{{ lang_email_placeholder }}">
+              <input type="email" id="wishlist-guest-email-list" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; color: #333;" value="${savedEmail}" placeholder="{{ lang_email_placeholder }}">
               <div id="wishlist-email-error-list" style="color:red; font-size:12px; display:none; margin-top:5px;"></div>
-              <button id="wishlist-email-submit-list" style="width: 100%; padding: 10px; background: #121212; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">{{ lang_submit }}</button>
-              <button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer;">{{ lang_close }}</button>
+              <button id="wishlist-email-submit-list" style="width: 100%; padding: 10px; background-color: ${btnBg}; color: ${btnText}; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">{{ lang_submit }}</button>
+              <button onclick="document.getElementById('wishlist-custom-alert').remove()" style="margin-top:10px; background:none; border:none; color:inherit; cursor:pointer; opacity:0.7;">{{ lang_close }}</button>
             </div>
           </div>
         </div>`;
@@ -286,12 +331,24 @@
 
     document.addEventListener("DOMContentLoaded", init);
     window.addEventListener('wishflow:updated', init);
-    // 🌟 エディタ画面でのトーストデザイン確認用（1秒後に自動表示）
+
     {% if request.design_mode %}
-      setTimeout(() => { 
-        showToast("✓ デザイン確認用のトーストです"); 
-      }, 1000);
+      {% if block.settings.show_email_preview %}
+        setTimeout(() => { 
+          if(typeof showEmailModal === 'function') showEmailModal(() => {}); 
+        }, 500);
+      {% endif %}
+      {% if block.settings.show_toast_preview %}
+        setTimeout(() => { 
+          const t = document.getElementById('wishflow-toast');
+          if(t) {
+            t.textContent = "✓ デザイン確認用のトーストです";
+            t.classList.remove('wf-toast-hidden');
+          }
+        }, 1000);
+      {% endif %}
     {% endif %}
+
   })();
 </script>
 
@@ -313,10 +370,32 @@
       { "value": "normal", "label": "t:account.normal" },
       { "value": "bold", "label": "t:account.bold" }
     ], "default": "normal" },
-    { "type": "range", "id": "custom_name_text_size", "label": "t:account.name_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
-    { "type": "range", "id": "custom_price_text_size", "label": "t:account.price_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 },
+
+    { "type": "header", "content": "商品カードのデザイン" },
+    { "type": "checkbox", "id": "show_card_preview", "label": "ダミー商品でプレビューを表示", "default": false },
+    { "type": "range", "id": "custom_name_text_size", "label": "商品名のサイズ", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
+    { "type": "select", "id": "name_weight", "label": "商品名の太さ", "options": [ { "value": "normal", "label": "標準" }, { "value": "bold", "label": "太字" } ], "default": "bold" },
+    { "type": "range", "id": "custom_price_text_size", "label": "価格のサイズ", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 },
+    { "type": "select", "id": "price_weight", "label": "価格の太さ", "options": [ { "value": "normal", "label": "標準" }, { "value": "bold", "label": "太字" } ], "default": "normal" },
+    { "type": "color", "id": "card_notify_bg_color", "label": "通知ボタンの背景色", "default": "#ffffff" },
+    { "type": "color", "id": "card_notify_text_color", "label": "通知ボタンの文字色", "default": "#d72c0d" },
+    { "type": "color", "id": "card_notify_border_color", "label": "通知ボタンの枠線色", "default": "#d72c0d" },
+
+    { "type": "header", "content": "メールフォームのデザイン" },
+    { "type": "checkbox", "id": "show_email_preview", "label": "プレビューを表示", "default": false },
+    { "type": "checkbox", "id": "modal_glass_effect", "label": "すりガラス効果", "default": true },
+    { "type": "color", "id": "modal_bg_color", "label": "背景色", "default": "#ffffff" },
+    { "type": "range", "id": "modal_bg_opacity", "label": "透明度", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
+    { "type": "color", "id": "modal_text_color", "label": "文字色", "default": "#121212" },
+    { "type": "range", "id": "modal_radius", "label": "角丸", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 },
+    { "type": "color", "id": "modal_btn_bg_color", "label": "ボタン背景色", "default": "#121212" },
+    { "type": "color", "id": "modal_btn_text_color", "label": "ボタン文字色", "default": "#ffffff" },
+
     { "type": "header", "content": "トースト通知のデザイン" },
+    { "type": "checkbox", "id": "show_toast_preview", "label": "トーストのプレビューを表示", "default": false },
+    { "type": "checkbox", "id": "toast_glass_effect", "label": "すりガラス効果", "default": true },
     { "type": "color", "id": "toast_bg_color", "label": "背景色", "default": "#121212" },
+    { "type": "range", "id": "toast_bg_opacity", "label": "透明度", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
     { "type": "color", "id": "toast_text_color", "label": "文字色", "default": "#ffffff" }
   ] 
 }

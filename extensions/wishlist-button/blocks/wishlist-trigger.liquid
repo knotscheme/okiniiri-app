@@ -1,26 +1,14 @@
 {%- comment -%} 
   商品ページ用: お気に入り＆通知ボタン (wishlist-trigger.liquid)
-  ★トースト通知のカスタム機能追加版
+  ★メールフォームのボタン色カスタム追加版
 {%- endcomment -%}
 
-{%- comment -%} --- 言語設定の取得 --- {%- endcomment -%}
 {%- assign store_lang = request.locale.iso_code | slice: 0, 2 -%}
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- comment -%} --- 判定用：デフォルト値の定義 --- {%- endcomment -%}
 {%- assign def_add_en = 'Add to Wishlist' -%}
 {%- assign def_add_ja = 'お気に入りに追加' -%}
-{%- assign def_added_en = 'In Wishlist' -%}
-{%- assign def_added_ja = '追加済み' -%}
-{%- assign def_notify_en = 'Notify Me When Available' -%}
-{%- assign def_notify_ja = '入荷通知を受け取る' -%}
-{%- assign def_subscribed_en = 'Notification Set' -%}
-{%- assign def_subscribed_ja = '入荷通知登録済み' -%}
-{%- assign def_submit_en = 'Register' -%}
-{%- assign def_submit_ja = '登録する' -%}
-
-{%- comment -%} スマート判定ロジック {%- endcomment -%}
 {%- assign val_add = block.settings.text_add -%}
 {%- if val_add == blank or val_add == def_add_en or val_add == def_add_ja -%}
   {%- assign use_translation = true -%}
@@ -115,6 +103,11 @@
 {%- assign modal_opacity_decimal = block.settings.modal_bg_opacity | default: 85 | divided_by: 100.0 -%}
 {%- assign modal_bg_rgba = modal_bg_color | color_modify: 'alpha', modal_opacity_decimal -%}
 
+{%- assign t_opacity = block.settings.toast_bg_opacity | default: 85 -%}
+{%- assign t_alpha = t_opacity | divided_by: 100.0 -%}
+{%- assign t_bg_raw = block.settings.toast_bg_color | default: '#121212' -%}
+{%- assign t_bg_rgba = t_bg_raw | color_modify: 'alpha', t_alpha -%}
+
 <div class="wishlist-app-container wishlist-app-container-{{ block.id }}" id="wishflow-root-{{ block.id }}">
   <button type="button" class="wishlist-button" id="wishlist-btn-{{ product.handle }}" onclick="event.stopPropagation(); window.toggleWishlist('{{ product.handle }}')">
     <span class="wishlist-icon">
@@ -143,9 +136,9 @@
   "modalText": "{{ block.settings.modal_text_color | default: '#121212' }}",
   "modalRadius": "{{ block.settings.modal_radius | default: 12 }}px",
   "modalGlass": {{ block.settings.modal_glass_effect | json }},
-  "submitBg": "{{ block.settings.notify_bg_color | default: '#ffffff' }}",
-  "submitText": "{{ block.settings.notify_text_color | default: '#d72c0d' }}",
-  "submitBorderColor": "{{ block.settings.notify_border_color | default: '#d72c0d' }}",
+  "submitBg": "{{ block.settings.modal_btn_bg_color | default: '#121212' }}",
+  "submitText": "{{ block.settings.modal_btn_text_color | default: '#ffffff' }}",
+  "submitBorderColor": "{{ block.settings.modal_btn_bg_color | default: '#121212' }}",
   "submitBorderWidth": "1px",
   "submitRadius": "{{ block.settings.custom_border_radius | default: 4 }}px"
 }
@@ -188,10 +181,12 @@
   .wishlist-email-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: #fff !important; color: #333 !important; }
   .wishlist-email-error { color: #d72c0d; font-size: 12px; display: none; margin-top: 5px; }
 
-  /* ★ トーストの設定をブロック設定から読み込むように変更 */
   #wishflow-toast-trigger {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    background: {{ block.settings.toast_bg_color | default: '#121212' }};
+    background-color: {{ t_bg_rgba }};
+    {% if block.settings.toast_glass_effect %}
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    {% endif %}
     color: {{ block.settings.toast_text_color | default: '#ffffff' }};
     padding: 15px 30px; border-radius: 8px;
     font-size: 15px; font-weight: bold; z-index: 2147483647; 
@@ -331,14 +326,22 @@
       if (e.detail.handle === PRODUCT_HANDLE) updateVisibility();
     });
 
-    {% if request.design_mode and block.settings.show_email_preview %}
-      setTimeout(() => { window.showCustomAlert('email_form'); }, 500);
-    {% endif %}
-    // 🌟 エディタ画面でのトーストデザイン確認用（1秒後に自動表示）
     {% if request.design_mode %}
-      setTimeout(() => { 
-        showToast("✓ デザイン確認用のトーストです"); 
-      }, 1000);
+      {% if block.settings.show_email_preview %}
+        setTimeout(() => { 
+          if(typeof window.showCustomAlert === 'function') window.showCustomAlert('email_form'); 
+        }, 500);
+      {% endif %}
+
+      {% if block.settings.show_toast_preview %}
+        setTimeout(() => { 
+          const t = document.getElementById('wishflow-toast-trigger');
+          if(t) {
+            t.textContent = "✓ デザイン確認用のトーストです";
+            t.classList.remove('wf-toast-hidden');
+          }
+        }, 1000);
+      {% endif %}
     {% endif %}
 
   })();
@@ -383,8 +386,13 @@
     { "type": "range", "id": "modal_bg_opacity", "label": "t:trigger.opacity", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
     { "type": "color", "id": "modal_text_color", "label": "t:trigger.text_color", "default": "#121212" },
     { "type": "range", "id": "modal_radius", "label": "t:trigger.radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 },
+    { "type": "color", "id": "modal_btn_bg_color", "label": "ボタン背景色", "default": "#121212" },
+    { "type": "color", "id": "modal_btn_text_color", "label": "ボタン文字色", "default": "#ffffff" },
     { "type": "header", "content": "トースト通知のデザイン" },
+    { "type": "checkbox", "id": "show_toast_preview", "label": "トーストのプレビューを表示", "default": false },
+    { "type": "checkbox", "id": "toast_glass_effect", "label": "すりガラス効果", "default": true },
     { "type": "color", "id": "toast_bg_color", "label": "背景色", "default": "#121212" },
+    { "type": "range", "id": "toast_bg_opacity", "label": "透明度", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
     { "type": "color", "id": "toast_text_color", "label": "文字色", "default": "#ffffff" }
   ]
 }
