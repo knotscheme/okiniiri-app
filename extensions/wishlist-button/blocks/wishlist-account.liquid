@@ -138,6 +138,7 @@
   .notify-btn-small { margin-top: 8px; width: 100%; padding: 8px; background: #ffffff; border: 1px solid #d72c0d; color: #d72c0d; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
   .notify-btn-small.registered { background: #eee; border-color: #ccc; color: #888; }
 
+  /* トースト通知 */
   #wishflow-toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     background: #121212; color: #fff; padding: 12px 24px; border-radius: 30px;
@@ -189,7 +190,6 @@
         if (!product) continue;
         const imgUrl = product.featured_image || '//cdn.shopify.com/s/images/themes/product-1.png';
         const price = (product.price / 100).toLocaleString();
-        
         let badgeHtml = '', notifyBtnHtml = '';
         if (!product.available) {
           badgeHtml = `<span class="sold-out-badge">{{ lang_sold_out }}</span>`;
@@ -198,21 +198,12 @@
           const btnClass = isRegistered ? "notify-btn-small registered" : "notify-btn-small";
           notifyBtnHtml = `<button class="${btnClass}" id="list-notify-${product.handle}" onclick="window.requestNotifyFromList('${product.handle}', ${product.variants[0].id})">${btnText}</button>`;
         }
-
-        html += `
-          <div class="wishlist-item" id="item-${product.handle}">
-            <button class="remove-btn" onclick="removeWish('${product.handle}')" title="{{ lang_remove_tooltip }}">×</button>
-            <a href="${product.url}" class="item-image-link"><img src="${imgUrl}" class="item-image" alt="${product.title}">${badgeHtml}</a>
-            <div class="wishlist-item-info">
-              <a href="${product.url}" class="item-name">${product.title}</a><span class="item-price">¥${price}</span>
-              ${notifyBtnHtml}
-            </div>
-          </div>`;
+        html += `<div class="wishlist-item" id="item-${product.handle}"><button class="remove-btn" onclick="removeWish('${product.handle}')">×</button><a href="${product.url}" class="item-image-link"><img src="${imgUrl}" class="item-image">${badgeHtml}</a><div class="wishlist-item-info"><a href="${product.url}" class="item-name">${product.title}</a><span class="item-price">¥${price}</span>${notifyBtnHtml}</div></div>`;
       }
-      if (html) { CONTAINER.innerHTML = html; } else { LOADING_MSG.innerText = "{{ lang_empty }}"; }
+      CONTAINER.innerHTML = html || `<p class="loading-msg">{{ lang_empty }}</p>`;
     }
 
-    // ★一本化した爆速通知ロジック
+    // 🚀 爆速通知ロジック (これ1つに一本化！)
     async function sendNotifyRequestList(handle, variantId, email) {
       const btn = document.getElementById(`list-notify-${handle}`);
       if (!btn) return;
