@@ -404,15 +404,15 @@ export default function Index() {
     backgroundColor: '#000'
   }}>
     <iframe 
-      width="100%" 
-      height="100%" 
-      src="https://www.youtube.com/embed/LaHGDLid2CE?rel=0" 
-      title="WishFlow Setup & PR Video" 
-      frameBorder="0" 
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-      allowFullScreen
-      style={{ display: 'block' }}
-    ></iframe>
+  width="100%" 
+  height="100%" 
+  src="https://www.youtube.com/embed/LaHGDLid2CE?rel=0&loop=1&playlist=LaHGDLid2CE" 
+  title="WishFlow Setup & PR Video" 
+  frameBorder="0" 
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+  allowFullScreen
+  style={{ display: 'block' }}
+></iframe>
   </div>
 </Box>
                   </InlineGrid>
