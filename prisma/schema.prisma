@@ -105,3 +105,13 @@ model FounderCampaign {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// 1回使い切りのプロモコード管理
+model PromoCode {
+  id        String    @id @default(uuid())
+  code      String    @unique // 発行するコード（例: WISH-A1B2）
+  isUsed    Boolean   @default(false) // 使われたかどうかの判定
+  usedBy    String?   // どのストア（shop）が使ったか記録
+  usedAt    DateTime? // いつ使われたか記録
+  createdAt DateTime  @default(now())
+}

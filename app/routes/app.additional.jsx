@@ -600,13 +600,9 @@ export default function AdditionalPage() {
                       </div>
                       <Text variant="headingMd">{text.card_founder}</Text>
                     </InlineStack>
-                    {isFounder ? (
-                      <Badge tone="success">{text.founder_badge_active}</Badge>
-                    ) : (
-                      <Badge tone="attention">
-                        {text.founder_badge_left.replace("{left}", Math.max(0, campaign.totalSlots - campaign.usedSlots)).replace("{total}", campaign.totalSlots)}
-                      </Badge>
-                    )}
+{isFounder && (
+  <Badge tone="success">{text.founder_badge_active}</Badge>
+)}
                   </InlineStack>
                   <Divider />
 
