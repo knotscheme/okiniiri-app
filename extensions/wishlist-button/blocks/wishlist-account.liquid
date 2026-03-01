@@ -2,7 +2,7 @@
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
   ★商品カードのデザインカスタム＆ダミープレビュー機能追加版
-  ★多言語（自動翻訳）判定強化版
+  ★多言語（自動翻訳）判定強化版 ＋ エディタ案内文の多言語対応版
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -10,17 +10,14 @@
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- comment -%} ★ ここから修正部分（翻訳をオンにする判定を強化） {%- endcomment -%}
 {%- assign val_title = block.settings.text_title | strip -%}
 {%- assign val_desc = block.settings.text_desc | strip -%}
-
 {%- assign use_translation = false -%}
 {%- if val_title == blank or val_title == 'Wishlist' or val_title == 'お気に入りリスト' -%}
   {%- assign use_translation = true -%}
 {%- elsif val_desc == blank or val_desc == 'Products you have saved.' or val_desc == 'あなたが保存した商品の一覧です' -%}
   {%- assign use_translation = true -%}
 {%- endif -%}
-{%- comment -%} ★ 修正部分はここまで {%- endcomment -%}
 
 {%- if use_translation -%}
   {%- case global_lang -%}
@@ -41,6 +38,8 @@
       {%- assign lang_submit = 'Register' -%}
       {%- assign lang_email_error = 'Please enter a valid email address.' -%}
       {%- assign lang_close = 'Close' -%}
+      {%- assign lang_editor_msg = "Editor Mode (Turn ON 'Show Dummy Products Preview' in settings to adjust design)" -%}
+      {%- assign lang_sample_product = "Sample Product" -%}
     {%- when 'zh', 'zh-TW' -%}
       {%- assign lang_title = '收藏清單' -%}
       {%- assign lang_desc = '您保存的商品列表。' -%}
@@ -58,6 +57,8 @@
       {%- assign lang_submit = '提交' -%}
       {%- assign lang_email_error = '請輸入正確的電子郵件地址。' -%}
       {%- assign lang_close = '關閉' -%}
+      {%- assign lang_editor_msg = "编辑器模式（在右侧设置中开启“显示测试商品预览”以调整设计）" -%}
+      {%- assign lang_sample_product = "示例商品" -%}
     {%- when 'fr' -%}
       {%- assign lang_title = 'Liste de souhaits' -%}
       {%- assign lang_desc = 'Les produits que vous avez enregistrés.' -%}
@@ -75,6 +76,8 @@
       {%- assign lang_submit = 'S’inscrire' -%}
       {%- assign lang_email_error = 'Veuillez entrer une adresse e-mail valide.' -%}
       {%- assign lang_close = 'Fermer' -%}
+      {%- assign lang_editor_msg = "Mode Éditeur (Activez 'Afficher l'aperçu des produits factices' dans les paramètres pour ajuster le design)" -%}
+      {%- assign lang_sample_product = "Produit d'exemple" -%}
     {%- when 'de' -%}
       {%- assign lang_title = 'Wunschliste' -%}
       {%- assign lang_desc = 'Ihre gespeicherten Produkte.' -%}
@@ -92,6 +95,8 @@
       {%- assign lang_submit = 'Registrieren' -%}
       {%- assign lang_email_error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' -%}
       {%- assign lang_close = 'Schließen' -%}
+      {%- assign lang_editor_msg = "Editor-Modus (Aktivieren Sie 'Vorschau mit Dummy-Produkten anzeigen' in den Einstellungen, um das Design anzupassen)" -%}
+      {%- assign lang_sample_product = "Beispielprodukt" -%}
     {%- when 'es' -%}
       {%- assign lang_title = 'Lista de deseos' -%}
       {%- assign lang_desc = 'Productos que has guardado.' -%}
@@ -109,6 +114,8 @@
       {%- assign lang_submit = 'Registrar' -%}
       {%- assign lang_email_error = 'Por favor, introduce un email válido.' -%}
       {%- assign lang_close = 'Cerrar' -%}
+      {%- assign lang_editor_msg = "Modo Editor (Active 'Mostrar vista previa de productos de prueba' en la configuración para ajustar el diseño)" -%}
+      {%- assign lang_sample_product = "Producto de muestra" -%}
     {%- else -%}
       {%- assign lang_title = 'お気に入りリスト' -%}
       {%- assign lang_desc = 'あなたが保存した商品の一覧です' -%}
@@ -126,6 +133,8 @@
       {%- assign lang_submit = '登録する' -%}
       {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
       {%- assign lang_close = '閉じる' -%}
+      {%- assign lang_editor_msg = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）" -%}
+      {%- assign lang_sample_product = "サンプル商品" -%}
   {%- endcase -%}
 {%- else -%}
   {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
@@ -144,6 +153,8 @@
   {%- assign lang_submit = '登録する' -%}
   {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
   {%- assign lang_close = '閉じる' -%}
+  {%- assign lang_editor_msg = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）" -%}
+  {%- assign lang_sample_product = "サンプル商品" -%}
 {%- endif -%}
 
 <div class="wishlist-modern-container wishlist-container-{{ block.id }}">
@@ -183,7 +194,6 @@
     --desc-size: {{ block.settings.desc_size }}px;
     --desc-weight: {{ block.settings.desc_weight }};
     --desc-color: {{ block.settings.desc_color }};
-    /* 商品カードのカスタム変数 */
     --name-size: {{ block.settings.custom_name_text_size }}px;
     --name-weight: {{ block.settings.name_weight }};
     --price-size: {{ block.settings.custom_price_text_size }}px;
@@ -241,19 +251,19 @@
     }
 
     async function init() {
-      // 🌟 エディタ画面でのプレビュー制御（ダミー商品の表示）
+      // 🌟 エディタ画面でのプレビュー制御（ダミー商品の表示も多言語化！）
       {% if request.design_mode %}
         {% if block.settings.show_card_preview %}
           const dummyHtml = `
-            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-1.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 A</a><span class="item-price">¥5,000</span><button class="notify-btn-small">{{ lang_notify }}</button></div></div>
-            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-2.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 B</a><span class="item-price">¥12,000</span></div></div>
-            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-3.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 C</a><span class="item-price">¥8,500</span><button class="notify-btn-small registered">{{ lang_subscribed }}</button></div></div>
-            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-4.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">サンプル商品 D</a><span class="item-price">¥3,200</span></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-1.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">{{ lang_sample_product }} A</a><span class="item-price">¥5,000</span><button class="notify-btn-small">{{ lang_notify }}</button></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-2.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">{{ lang_sample_product }} B</a><span class="item-price">¥12,000</span></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-3.png" class="item-image" alt="Sample"><span class="sold-out-badge">{{ lang_sold_out }}</span></a><div class="wishlist-item-info"><a href="#" class="item-name">{{ lang_sample_product }} C</a><span class="item-price">¥8,500</span><button class="notify-btn-small registered">{{ lang_subscribed }}</button></div></div>
+            <div class="wishlist-item"><button class="remove-btn">×</button><a href="#" class="item-image-link"><img src="//cdn.shopify.com/s/images/themes/product-4.png" class="item-image" alt="Sample"></a><div class="wishlist-item-info"><a href="#" class="item-name">{{ lang_sample_product }} D</a><span class="item-price">¥3,200</span></div></div>
           `;
           CONTAINER.innerHTML = dummyHtml;
           return;
         {% else %}
-          if (LOADING_MSG) LOADING_MSG.innerText = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）";
+          if (LOADING_MSG) LOADING_MSG.innerText = "{{ lang_editor_msg }}";
           return;
         {% endif %}
       {% endif %}
