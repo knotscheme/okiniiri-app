@@ -395,15 +395,26 @@ export default function Index() {
                     </BlockStack>
 
                     <Box>
-                      <div style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        backgroundColor: 'var(--p-color-bg-surface-secondary)', borderRadius: '12px', padding: '40px 20px', 
-                        cursor: 'pointer', border: '1px solid var(--p-color-border-subdued)', height: '100%', minHeight: '160px'
-                      }}>
-                        <Icon source={PlayCircleIcon} tone="subdued" />
-                        <Text variant="headingSm" tone="subdued">{text.video_placeholder}</Text>
-                      </div>
-                    </Box>
+  <div style={{
+    width: '100%',
+    aspectRatio: '16/9',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: '1px solid var(--p-color-border-subdued)',
+    backgroundColor: '#000'
+  }}>
+    <iframe 
+      width="100%" 
+      height="100%" 
+      src="https://www.youtube.com/embed/LaHGDLid2CE?rel=0" 
+      title="WishFlow Setup & PR Video" 
+      frameBorder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+      allowFullScreen
+      style={{ display: 'block' }}
+    ></iframe>
+  </div>
+</Box>
                   </InlineGrid>
                 </BlockStack>
               </Box>
