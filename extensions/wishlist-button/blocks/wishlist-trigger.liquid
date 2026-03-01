@@ -7,10 +7,9 @@
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- comment -%} ★ ここから修正部分（翻訳をオンにする判定を強化しました） {%- endcomment -%}
-{%- assign val_add = block.settings.text_add -%}
-{%- assign val_notify = block.settings.text_notify -%}
-{%- assign val_email_label = block.settings.text_email_label -%}
+{%- assign val_add = block.settings.text_add | strip -%}
+{%- assign val_notify = block.settings.text_notify | strip -%}
+{%- assign val_email_label = block.settings.text_email_label | strip -%}
 
 {%- assign use_translation = false -%}
 {%- if val_add == blank or val_add == 'Add to Wishlist' or val_add == 'お気に入りに追加' -%}
@@ -20,7 +19,6 @@
 {%- elsif val_email_label == blank or val_email_label == 'Enter email for restock alerts' or val_email_label == '入荷通知を受け取るメールアドレスを入力' -%}
   {%- assign use_translation = true -%}
 {%- endif -%}
-{%- comment -%} ★ 修正部分はここまで {%- endcomment -%}
 
 {%- if use_translation -%}
   {%- case global_lang -%}
@@ -36,6 +34,7 @@
       {%- assign text_success_notified = '通知已設定' -%}
       {%- assign text_success_removed = '通知已取消' -%}
       {%- assign text_error_email = '請輸入正確的電子郵件地址' -%}
+      {%- assign text_toast_preview_msg = '提示框预览' -%}
     {%- when 'en' -%}
       {%- assign text_add = 'Add to Wishlist' -%}
       {%- assign text_added = 'In Wishlist' -%}
@@ -48,6 +47,7 @@
       {%- assign text_success_notified = 'Notification Set' -%}
       {%- assign text_success_removed = 'Notification Canceled' -%}
       {%- assign text_error_email = 'Please enter a valid email address' -%}
+      {%- assign text_toast_preview_msg = 'Toast notification preview' -%}
     {%- when 'fr' -%}
       {%- assign text_add = 'Ajouter aux favoris' -%}
       {%- assign text_added = 'Dans les favoris' -%}
@@ -58,6 +58,7 @@
       {%- assign text_success_notified = 'Enregistré' -%}
       {%- assign text_success_removed = 'Supprimé' -%}
       {%- assign text_error_email = 'Email invalide' -%}
+      {%- assign text_toast_preview_msg = 'Aperçu de la notification' -%}
     {%- when 'de' -%}
       {%- assign text_add = 'Auf die Wunschliste' -%}
       {%- assign text_added = 'In der Wunschliste' -%}
@@ -68,6 +69,7 @@
       {%- assign text_success_notified = 'Gespeichert' -%}
       {%- assign text_success_removed = 'Entfernt' -%}
       {%- assign text_error_email = 'Ungültige E-Mail' -%}
+      {%- assign text_toast_preview_msg = 'Benachrichtigungsvorschau' -%}
     {%- when 'es' -%}
       {%- assign text_add = 'Añadir a deseos' -%}
       {%- assign text_added = 'En lista de deseos' -%}
@@ -78,6 +80,7 @@
       {%- assign text_success_notified = 'Guardado' -%}
       {%- assign text_success_removed = 'Eliminado' -%}
       {%- assign text_error_email = 'Email inválido' -%}
+      {%- assign text_toast_preview_msg = 'Vista previa de notificación' -%}
     {%- else -%}
       {%- assign text_add = 'お気に入りに追加' -%}
       {%- assign text_added = '追加済み' -%}
@@ -90,6 +93,7 @@
       {%- assign text_success_notified = '通知を設定しました' -%}
       {%- assign text_success_removed = '通知を解除しました' -%}
       {%- assign text_error_email = '正しいメールアドレスを入力してください' -%}
+      {%- assign text_toast_preview_msg = 'デザイン確認用のトーストです' -%}
   {%- endcase -%}
 {%- else -%}
   {%- assign text_add = block.settings.text_add -%}
@@ -103,6 +107,7 @@
   {%- assign text_success_notified = 'Saved' -%}
   {%- assign text_success_removed = 'Removed' -%}
   {%- assign text_error_email = 'Invalid email' -%}
+  {%- assign text_toast_preview_msg = 'Toast notification preview' -%}
 {%- endif -%}
 
 {%- assign modal_bg_color = block.settings.modal_bg_color | default: '#ffffff' -%}
@@ -428,7 +433,7 @@
         setTimeout(() => { 
           const t = document.getElementById('wishflow-toast-trigger');
           if(t) {
-            t.textContent = "✓ デザイン確認用のトーストです";
+            t.textContent = "✓ " + "{{ text_toast_preview_msg }}";
             t.classList.remove('wf-toast-hidden');
           }
         }, 1000);
@@ -445,16 +450,16 @@
   "templates": ["product"],
   "settings": [
     { "type": "header", "content": "t:trigger.header_text" },
-    { "type": "text", "id": "text_add", "label": "t:trigger.add", "default": "t:trigger.default_add" },
-    { "type": "text", "id": "text_added", "label": "t:trigger.added", "default": "t:trigger.default_added" },
-    { "type": "text", "id": "text_notify", "label": "t:trigger.notify", "default": "t:trigger.default_notify" },
-    { "type": "text", "id": "text_subscribed", "label": "t:trigger.subscribed", "default": "t:trigger.default_subscribed" },
+    { "type": "text", "id": "text_add", "label": "t:trigger.add", "default": "Add to Wishlist" },
+    { "type": "text", "id": "text_added", "label": "t:trigger.added", "default": "In Wishlist" },
+    { "type": "text", "id": "text_notify", "label": "t:trigger.notify", "default": "Notify Me When Available" },
+    { "type": "text", "id": "text_subscribed", "label": "t:trigger.subscribed", "default": "Notification Set" },
     
     { "type": "header", "content": "t:trigger.header_email" },
-    { "type": "text", "id": "text_email_label", "label": "t:trigger.email_label", "default": "t:trigger.default_email_label" },
+    { "type": "text", "id": "text_email_label", "label": "t:trigger.email_label", "default": "Enter email for restock alerts" },
     { "type": "text", "id": "text_email_placeholder", "label": "t:trigger.email_placeholder", "default": "example@email.com" },
-    { "type": "text", "id": "text_submit", "label": "t:trigger.submit", "default": "t:trigger.default_submit" },
-    { "type": "text", "id": "text_close", "label": "t:trigger.close", "default": "t:trigger.default_close" },
+    { "type": "text", "id": "text_submit", "label": "t:trigger.submit", "default": "Register" },
+    { "type": "text", "id": "text_close", "label": "t:trigger.close", "default": "Close" },
     
     { "type": "header", "content": "t:trigger.header_design" },
     { "type": "select", "id": "icon_type", "label": "t:trigger.icon_type", "options": [ { "value": "outline_heart", "label": "t:trigger.heart_outline" }, { "value": "solid_heart", "label": "t:trigger.heart_solid" }, { "value": "star", "label": "t:trigger.star" }, { "value": "bookmark", "label": "t:trigger.bookmark" } ], "default": "outline_heart" },

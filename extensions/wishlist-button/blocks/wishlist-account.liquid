@@ -2,7 +2,7 @@
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
   ★商品カードのデザインカスタム＆ダミープレビュー機能追加版
-  ★多言語（自動翻訳）判定強化版 ＋ エディタ案内文の多言語対応版
+  ★多言語（自動翻訳）判定強化版 ＋ エディタ案内＆トーストの多言語対応版
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -40,6 +40,7 @@
       {%- assign lang_close = 'Close' -%}
       {%- assign lang_editor_msg = "Editor Mode (Turn ON 'Show Dummy Products Preview' in settings to adjust design)" -%}
       {%- assign lang_sample_product = "Sample Product" -%}
+      {%- assign lang_toast_preview_msg = "Toast notification preview" -%}
     {%- when 'zh', 'zh-TW' -%}
       {%- assign lang_title = '收藏清單' -%}
       {%- assign lang_desc = '您保存的商品列表。' -%}
@@ -59,6 +60,7 @@
       {%- assign lang_close = '關閉' -%}
       {%- assign lang_editor_msg = "编辑器模式（在右侧设置中开启“显示测试商品预览”以调整设计）" -%}
       {%- assign lang_sample_product = "示例商品" -%}
+      {%- assign lang_toast_preview_msg = "提示框预览" -%}
     {%- when 'fr' -%}
       {%- assign lang_title = 'Liste de souhaits' -%}
       {%- assign lang_desc = 'Les produits que vous avez enregistrés.' -%}
@@ -78,6 +80,7 @@
       {%- assign lang_close = 'Fermer' -%}
       {%- assign lang_editor_msg = "Mode Éditeur (Activez 'Afficher l'aperçu des produits factices' dans les paramètres pour ajuster le design)" -%}
       {%- assign lang_sample_product = "Produit d'exemple" -%}
+      {%- assign lang_toast_preview_msg = "Aperçu de la notification" -%}
     {%- when 'de' -%}
       {%- assign lang_title = 'Wunschliste' -%}
       {%- assign lang_desc = 'Ihre gespeicherten Produkte.' -%}
@@ -97,6 +100,7 @@
       {%- assign lang_close = 'Schließen' -%}
       {%- assign lang_editor_msg = "Editor-Modus (Aktivieren Sie 'Vorschau mit Dummy-Produkten anzeigen' in den Einstellungen, um das Design anzupassen)" -%}
       {%- assign lang_sample_product = "Beispielprodukt" -%}
+      {%- assign lang_toast_preview_msg = "Benachrichtigungsvorschau" -%}
     {%- when 'es' -%}
       {%- assign lang_title = 'Lista de deseos' -%}
       {%- assign lang_desc = 'Productos que has guardado.' -%}
@@ -116,6 +120,7 @@
       {%- assign lang_close = 'Cerrar' -%}
       {%- assign lang_editor_msg = "Modo Editor (Active 'Mostrar vista previa de productos de prueba' en la configuración para ajustar el diseño)" -%}
       {%- assign lang_sample_product = "Producto de muestra" -%}
+      {%- assign lang_toast_preview_msg = "Vista previa de notificación" -%}
     {%- else -%}
       {%- assign lang_title = 'お気に入りリスト' -%}
       {%- assign lang_desc = 'あなたが保存した商品の一覧です' -%}
@@ -135,6 +140,7 @@
       {%- assign lang_close = '閉じる' -%}
       {%- assign lang_editor_msg = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）" -%}
       {%- assign lang_sample_product = "サンプル商品" -%}
+      {%- assign lang_toast_preview_msg = "デザイン確認用のトーストです" -%}
   {%- endcase -%}
 {%- else -%}
   {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
@@ -155,6 +161,7 @@
   {%- assign lang_close = '閉じる' -%}
   {%- assign lang_editor_msg = "エディタモード（右側の設定から「ダミー商品を表示」をONにするとデザイン調整ができます）" -%}
   {%- assign lang_sample_product = "サンプル商品" -%}
+  {%- assign lang_toast_preview_msg = "デザイン確認用のトーストです" -%}
 {%- endif -%}
 
 <div class="wishlist-modern-container wishlist-container-{{ block.id }}">
@@ -251,7 +258,6 @@
     }
 
     async function init() {
-      // 🌟 エディタ画面でのプレビュー制御（ダミー商品の表示も多言語化！）
       {% if request.design_mode %}
         {% if block.settings.show_card_preview %}
           const dummyHtml = `
@@ -402,7 +408,7 @@
         setTimeout(() => { 
           const t = document.getElementById('wishflow-toast');
           if(t) {
-            t.textContent = "✓ デザイン確認用のトーストです";
+            t.textContent = "✓ " + "{{ lang_toast_preview_msg }}";
             t.classList.remove('wf-toast-hidden');
           }
         }, 1000);
