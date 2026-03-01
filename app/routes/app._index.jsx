@@ -498,7 +498,7 @@ export default function Index() {
                     <Divider />
                     
                     {/* ★ 権限がない場合はテーブルをぼかしてバナーを重ねる */}
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', minHeight: '280px', overflow: 'hidden' }}>
                       <div style={{ 
                         filter: isProUnlocked ? 'none' : 'blur(4px)', 
                         pointerEvents: isProUnlocked ? 'auto' : 'none' 
