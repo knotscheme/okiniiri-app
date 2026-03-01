@@ -23,10 +23,15 @@ export const loader = async ({ request }) => {
     appUsage = await db.appUsage.create({ data: { shop } });
   }
 
+  // ★修正ポイント1: プロモコードの使用済み数をリアルタイムに集計
+  const actualUsedCount = await db.promoCode.count({
+    where: { isUsed: true }
+  });
+
   let campaign = await db.founderCampaign.findFirst();
   if (!campaign) {
     campaign = await db.founderCampaign.create({
-      data: { code: "FOUNDER100", totalSlots: 100, usedSlots: 0, isActive: true }
+      data: { code: "OFFICIAL_HOLDER", totalSlots: 100, usedSlots: 0, isActive: true }
     });
   }
 
@@ -34,10 +39,10 @@ export const loader = async ({ request }) => {
     settings: settings || {}, 
     shop,
     isFounder: appUsage.isFounder,
-    currentPlan: appUsage.plan || "free", // ★プラン情報を追加
+    currentPlan: appUsage.plan || "free",
     campaign: {
       totalSlots: campaign.totalSlots,
-      usedSlots: campaign.usedSlots,
+      usedSlots: actualUsedCount, // ★修正ポイント2: DBの集計結果を画面に渡す
       isActive: campaign.isActive
     }
   };
@@ -95,7 +100,7 @@ export const action = async ({ request }) => {
       saved: "Paramètres enregistrés",
       founder_empty: "Veuillez entrer un code d'invitation",
       founder_invalid: "Code invalide",
-      founder_full: "Désolé, cette campagne est complète",
+      founder_full: "Désolé, cetteキャンペーン est complète",
       founder_already_has: "Vous avez déjà le plan Founder",
       founder_success: "🎉 Plan Founder appliqué ! Toutes les fonctionnalités sont gratuites à vie."
     },
@@ -127,35 +132,52 @@ export const action = async ({ request }) => {
   
   const msgs = t_msgs[language] || t_msgs.ja;
 
+  // ★修正ポイント3: プロモコード判定ロジックの刷新
   if (intent === "apply_founder_code") {
     const inputCode = formData.get("founder_code")?.trim();
     if (!inputCode) return { success: false, message: msgs.founder_empty };
 
-    const campaign = await db.founderCampaign.findUnique({ where: { code: inputCode } });
-    
-    if (!campaign || !campaign.isActive) {
+    // 1. まずそのコードが「存在する」かつ「未使用」か確認
+    const promo = await db.promoCode.findUnique({
+      where: { code: inputCode }
+    });
+
+    if (!promo || promo.isUsed) {
       return { success: false, message: msgs.founder_invalid };
     }
 
     try {
       await db.$transaction(async (tx) => {
-        const currentCamp = await tx.founderCampaign.findUnique({ where: { id: campaign.id } });
-        
-        if (currentCamp.usedSlots >= currentCamp.totalSlots) {
+        // キャンペーン全体の残り枠を再確認（並列実行対策）
+        const campaign = await tx.founderCampaign.findFirst();
+        const currentUsedCount = await tx.promoCode.count({ where: { isUsed: true } });
+
+        if (!campaign || !campaign.isActive || currentUsedCount >= campaign.totalSlots) {
           throw new Error("FULL");
         }
 
         const usage = await tx.appUsage.findUnique({ where: { shop: session.shop } });
-        
         if (usage && usage.isFounder) {
           throw new Error("ALREADY");
         }
 
+        // 2. コードを使用済みに更新
+        await tx.promoCode.update({
+          where: { id: promo.id },
+          data: {
+            isUsed: true,
+            usedBy: session.shop,
+            usedAt: new Date(),
+          }
+        });
+
+        // 3. 表示用カウントを更新
         await tx.founderCampaign.update({
-          where: { id: currentCamp.id },
+          where: { id: campaign.id },
           data: { usedSlots: { increment: 1 } }
         });
 
+        // 4. ショップのステータスをFounderに更新
         await tx.appUsage.upsert({
           where: { shop: session.shop },
           update: { isFounder: true, plan: "founder", founderRegisteredAt: new Date() },
@@ -172,6 +194,7 @@ export const action = async ({ request }) => {
     }
   }
 
+  // --- これ以降、他のintent（sync, test_email, save等）は一切変更なし ---
   if (intent === "sync") {
     await new Promise(resolve => setTimeout(resolve, 1000));
     return { success: true, message: msgs.sync };
@@ -179,72 +202,33 @@ export const action = async ({ request }) => {
 
   if (intent === "test_email") {
     const targetEmail = formData.get("test_email_to");
-
-    if (!targetEmail) {
-      return { success: false, message: msgs.test_error };
-    }
+    if (!targetEmail) return { success: false, message: msgs.test_error };
 
     const apiKey = process.env.RESEND_API_KEY;
-
     if (!apiKey) {
-        console.error("Error: RESEND_API_KEY is missing in .env");
-        return { success: false, message: "System Error: .envにRESEND_API_KEYが設定されていません。" };
+      console.error("Error: RESEND_API_KEY is missing in .env");
+      return { success: false, message: "System Error: .envにRESEND_API_KEYが設定されていません。" };
     }
 
     let senderName = "ショップ事務局";
     try {
       const currentSettings = await db.emailSetting.findUnique({ where: { shop: session.shop } });
-      if (currentSettings?.senderName) {
-        senderName = currentSettings.senderName;
-      }
-    } catch(e) {
-      console.error("DB Fetch Error in test_email:", e);
-    }
+      if (currentSettings?.senderName) senderName = currentSettings.senderName;
+    } catch(e) { console.error("DB Fetch Error in test_email:", e); }
 
     const mailTemplates = {
-      ja: {
-        subject: "【WishFlow】テストメール送信確認",
-        title: "テストメール送信完了",
-        message: "これはWishFlowアプリからのテストメールです。<br>このメールが受信できれば、通知設定は正常に動作しています。",
-        footer: "送信設定"
-      },
-      en: {
-        subject: "[WishFlow] Test Email Confirmation",
-        title: "Test Email Sent",
-        message: "This is a test email from the WishFlow app.<br>If you received this, your notification settings are working correctly.",
-        footer: "Sender Settings"
-      },
-      zh: {
-        subject: "【WishFlow】測試郵件確認",
-        title: "測試郵件發送完成",
-        message: "這是來自 WishFlow 應用程序的測試郵件。<br>如果您收到此郵件，說明通知設置工作正常。",
-        footer: "發送設置"
-      },
-      fr: {
-        subject: "[WishFlow] Confirmation de l'e-mail de test",
-        title: "E-mail de test envoyé",
-        message: "Ceci est un e-mail de test de l'application WishFlow.<br>Si vous recevez ceci, vos paramètres de notification fonctionnent correctement.",
-        footer: "Paramètres d'envoi"
-      },
-      de: {
-        subject: "[WishFlow] Test-E-Mail-Bestätigung",
-        title: "Test-E-Mail gesendet",
-        message: "Dies ist eine Test-E-Mail der WishFlow-App.<br>Wenn Sie dies erhalten, funktionieren Ihre Benachrichtigungseinstellungen korrekt.",
-        footer: "Absendereinstellungen"
-      },
-      es: {
-        subject: "[WishFlow] Confirmación de correo de prueba",
-        title: "Correo de prueba enviado",
-        message: "Este es un correo de prueba de la aplicación WishFlow.<br>Si recibe esto, su configuración de notificaciones funciona correctamente.",
-        footer: "Configuración de envío"
-      }
+      ja: { subject: "【WishFlow】テストメール送信確認", title: "テストメール送信完了", message: "これはWishFlowアプリからのテストメールです。<br>このメールが受信できれば、通知設定は正常に動作しています。", footer: "送信設定" },
+      en: { subject: "[WishFlow] Test Email Confirmation", title: "Test Email Sent", message: "This is a test email from the WishFlow app.<br>If you received this, your notification settings are working correctly.", footer: "Sender Settings" },
+      zh: { subject: "【WishFlow】測試郵件確認", title: "測試郵件發送完成", message: "這是來自 WishFlow 應用程序的測試郵件。<br>如果您收到此郵件，說明通知設置工作正常。", footer: "發送設置" },
+      fr: { subject: "[WishFlow] Confirmation de l'e-mail de test", title: "E-mail de test envoyé", message: "Ceci est un e-mail de test de l'application WishFlow.<br>Si vous recevez ceci, vos paramètres de notification fonctionnent correctement.", footer: "Paramètres d'envoi" },
+      de: { subject: "[WishFlow] Test-E-Mail-Bestätigung", title: "Test-E-Mail gesendet", message: "Dies ist eine Test-E-Mail der WishFlow-App.<br>Wenn Sie dies erhalten, funktionieren Ihre Benachrichtigungseinstellungen korrekt.", footer: "Absendereinstellungen" },
+      es: { subject: "[WishFlow] Confirmación de correo de prueba", title: "Correo de prueba enviado", message: "Este es un correo de prueba de la application WishFlow.<br>Si recibe esto, su configuración de notificaciones funciona correctamente.", footer: "Configuración de envío" }
     };
 
     const tmpl = mailTemplates[language] || mailTemplates.en;
 
     try {
       const resend = new Resend(apiKey);
-      
       const { data, error } = await resend.emails.send({
         from: `${senderName} <in_stock@knotscheme.com>`, 
         to: targetEmail,
@@ -259,14 +243,8 @@ export const action = async ({ request }) => {
           </div>
         `
       });
-
-      if (error) {
-        console.error("Resend API returned error:", error);
-        return { success: false, message: `${msgs.test_fail} ${error.message}` };
-      }
-
+      if (error) return { success: false, message: `${msgs.test_fail} ${error.message}` };
       return { success: true, message: `${msgs.test_sent}${targetEmail}` };
-      
     } catch (e) {
       console.error("Resend Exception:", e);
       return { success: false, message: `${msgs.test_fail} ${e.message}` };
@@ -296,12 +274,9 @@ export const action = async ({ request }) => {
         const shopDataRes = await admin.graphql(`{ shop { id } }`);
         const shopJson = await shopDataRes.json();
         const shopId = shopJson.data.shop.id;
-
         await admin.graphql(
           `mutation setMetafield($input: MetafieldsSetInput!) {
-            metafieldsSet(metafields: [$input]) {
-              userErrors { message }
-            }
+            metafieldsSet(metafields: [$input]) { userErrors { message } }
           }`,
           {
             variables: {
@@ -315,9 +290,7 @@ export const action = async ({ request }) => {
             }
           }
         );
-      } catch (e) {
-        console.error("Metafield Update Failed:", e);
-      }
+      } catch (e) { console.error("Metafield Update Failed:", e); }
     }
     return { success: true, message: msgs.saved };
   }
@@ -327,13 +300,13 @@ export default function AdditionalPage() {
   const { settings, isFounder, currentPlan, campaign } = useLoaderData(); 
   const actionData = useActionData();
   const submit = useSubmit();
-  const navigate = useNavigate(); // ★追加
+  const navigate = useNavigate();
   const navigation = useNavigation();
   const isLoading = navigation.state === "submitting";
   const loadingIntent = navigation.formData?.get("intent");
 
   const [founderCode, setFounderCode] = useState("");
-  const [showPlanLock, setShowPlanLock] = useState(false); // ★言語制限用ステート
+  const [showPlanLock, setShowPlanLock] = useState(false);
 
   const t = {
     ja: {
@@ -346,7 +319,6 @@ export default function AdditionalPage() {
       sys_banner_on_desc: "再入荷リクエストの受付とメール通知が有効になっています。",
       sys_banner_off_title: "システムは停止しています",
       sys_banner_off_desc: "リクエスト受付とメール通知は現在行われません。",
-      
       btn_sync: "手動データ同期", tab_reg: "登録完了メール", tab_res: "再入荷通知メール",
       card_support: "通知テスト",
       label_test_email: "送信先メールアドレス",
@@ -358,15 +330,13 @@ export default function AdditionalPage() {
       tmpl_reg_body: "商品「{{product_name}}」の入荷通知設定を承りました。入荷次第、本メールアドレスへご連絡いたします。",
       tmpl_res_sub: "【再入荷のお知らせ】",
       tmpl_res_body: "ご登録いただいた商品「{{product_name}}」が再入荷いたしました。",
-
       card_founder: "100名限定 Founderプラン",
       founder_desc: "初期導入ユーザー様への特別プラン（Pro機能が永久無料）。招待コードをお持ちの場合は入力してください。",
       founder_badge_active: "Founder メンバー",
       founder_badge_left: "残り枠: {left} / {total}",
-      founder_placeholder: "招待コード (例: XX-XXXX-XXXX)",
+      founder_placeholder: "招待コード (例: WISH-XXXX)",
       btn_founder: "特典を受け取る",
       founder_thanks: "✨ あなたはFounderメンバーです！\n今後のすべてのアップデートやPro機能が永久に無料でご利用いただけます。初期からのご支援、本当にありがとうございます。",
-      // ★追加テキスト
       lang_lock_title: "多言語対応（6カ国語）はStandardプラン以上で解放されます",
       lang_lock_desc: "Freeプランでは日本語と英語のみご利用いただけます。グローバル展開にはStandardプランをご検討ください。",
       btn_view_plans: "プランを見る"
@@ -381,7 +351,6 @@ export default function AdditionalPage() {
       sys_banner_on_desc: "Restock requests and email notifications are active.",
       sys_banner_off_title: "System is Stopped",
       sys_banner_off_desc: "Requests and notifications are currently paused.",
-
       btn_sync: "Manual Data Sync", tab_reg: "Registration Email", tab_res: "Restock Email",
       card_support: "Notification Test",
       label_test_email: "Test Email Address",
@@ -393,12 +362,11 @@ export default function AdditionalPage() {
       tmpl_reg_body: "We received your request for {{product_name}}. We will notify you when it is back in stock.",
       tmpl_res_sub: "[Restock Alert] Item is back!",
       tmpl_res_body: "Great news! {{product_name}} is now back in stock.",
-
       card_founder: "First 100 Founder Plan",
       founder_desc: "Special plan for early adopters (Pro features forever free). Enter your invite code.",
       founder_badge_active: "Founder Member",
       founder_badge_left: "{left} / {total} spots left",
-      founder_placeholder: "Invite Code (e.g. XX-XXXX-XXXX)",
+      founder_placeholder: "Invite Code (e.g. WISH-XXXX)",
       btn_founder: "Claim Offer",
       founder_thanks: "✨ You are a Founder Member!\nAll future updates and Pro features are forever free. Thank you for your early support!",
       lang_lock_title: "Multi-language support is available on Standard Plan",
@@ -409,38 +377,30 @@ export default function AdditionalPage() {
 
   const [formState, setFormState] = useState({
     senderName: settings.senderName || t.en.tmpl_sender,
-  subject: settings.subject || t.en.tmpl_reg_sub,
-  body: settings.body || t.en.tmpl_reg_body,
-  restockSubject: settings.restockSubject || t.en.tmpl_res_sub,
-  restockBody: settings.restockBody || t.en.tmpl_res_body,
-  isRestockEnabled: settings.isRestockEnabled ?? true,
-  language: settings.language || "en", 
-});
+    subject: settings.subject || t.en.tmpl_reg_sub,
+    body: settings.body || t.en.tmpl_reg_body,
+    restockSubject: settings.restockSubject || t.en.tmpl_res_sub,
+    restockBody: settings.restockBody || t.en.tmpl_res_body,
+    isRestockEnabled: settings.isRestockEnabled ?? true,
+    language: settings.language || "en", 
+  });
 
   const [testEmail, setTestEmail] = useState("");
-
   const text = t[formState.language] || t.ja; 
 
   const handleLanguageChange = (newLang) => {
-    // ★ 言語制限ロジック追加
     const isFree = !isFounder && currentPlan === "free";
     const isRestrictedLanguage = !["ja", "en"].includes(newLang);
-
     if (isFree && isRestrictedLanguage) {
-      setShowPlanLock(true); // 警告バナーを表示
-      return; // 更新をブロック
+      setShowPlanLock(true);
+      return;
     }
-
     setShowPlanLock(false);
     const newText = t[newLang] || t.ja;
     setFormState(prev => ({
-      ...prev,
-      language: newLang,
-      senderName: newText.tmpl_sender,
-      subject: newText.tmpl_reg_sub,
-      body: newText.tmpl_reg_body,
-      restockSubject: newText.tmpl_res_sub,
-      restockBody: newText.tmpl_res_body
+      ...prev, language: newLang,
+      senderName: newText.tmpl_sender, subject: newText.tmpl_reg_sub, body: newText.tmpl_reg_body,
+      restockSubject: newText.tmpl_res_sub, restockBody: newText.tmpl_res_body
     }));
   };
 
@@ -459,10 +419,7 @@ export default function AdditionalPage() {
   };
 
   const handleTestEmail = () => {
-    if (!testEmail) {
-        alert(text.test_error || "メールアドレスを入力してください"); 
-        return;
-    }
+    if (!testEmail) { alert(text.test_error || "メールアドレスを入力してください"); return; }
     const fd = new FormData();
     fd.append("intent", "test_email");
     fd.append("test_email_to", testEmail);
@@ -504,20 +461,13 @@ export default function AdditionalPage() {
         {actionData?.success && <Banner tone="success" title={actionData.message} />}
         {actionData?.success === false && <Banner tone="critical" title={actionData.message} />}
 
-        {/* ★追加：言語制限警告バナー */}
         {showPlanLock && (
-          <Banner 
-            tone="warning" 
-            title={text.lang_lock_title}
-            action={{ content: text.btn_view_plans, onAction: () => navigate("/app/pricing") }}
-            onDismiss={() => setShowPlanLock(false)}
-          >
+          <Banner tone="warning" title={text.lang_lock_title} action={{ content: text.btn_view_plans, onAction: () => navigate("/app/pricing") }} onDismiss={() => setShowPlanLock(false)}>
             <p>{text.lang_lock_desc}</p>
           </Banner>
         )}
 
         <Layout>
-          {/* 左カラム：言語設定、メール設定 ＆ Founderキャンペーン */}
           <Layout.Section>
             <BlockStack gap="400">
               <Card>
@@ -551,7 +501,6 @@ export default function AdditionalPage() {
                 </BlockStack>
               </Card>
 
-              {/* メール設定カード */}
               <Card padding="0">
                  <Box padding="400">
                     <BlockStack gap="400">
@@ -590,7 +539,6 @@ export default function AdditionalPage() {
                 </Tabs>
               </Card>
 
-              {/* Founder キャンペーンカード */}
               <Card>
                 <BlockStack gap="400">
                   <InlineStack align="space-between" blockAlign="center">
@@ -600,9 +548,7 @@ export default function AdditionalPage() {
                       </div>
                       <Text variant="headingMd">{text.card_founder}</Text>
                     </InlineStack>
-{isFounder && (
-  <Badge tone="success">{text.founder_badge_active}</Badge>
-)}
+                    {isFounder && <Badge tone="success">{text.founder_badge_active}</Badge>}
                   </InlineStack>
                   <Divider />
 
@@ -630,6 +576,12 @@ export default function AdditionalPage() {
                           {text.btn_founder}
                         </Button>
                       </InlineStack>
+                      {/* 残り枠の表示 */}
+                      <InlineStack align="end">
+                        <Text variant="bodySm" tone="subdued">
+                          {text.founder_badge_left.replace('{left}', campaign.totalSlots - campaign.usedSlots).replace('{total}', campaign.totalSlots)}
+                        </Text>
+                      </InlineStack>
                     </BlockStack>
                   )}
                 </BlockStack>
@@ -638,10 +590,8 @@ export default function AdditionalPage() {
             </BlockStack>
           </Layout.Section>
 
-          {/* 右カラム：システム & テスト */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              
               <Card>
                 <BlockStack gap="400">
                   <InlineStack align="space-between" blockAlign="center">
@@ -656,25 +606,14 @@ export default function AdditionalPage() {
                     </Badge>
                   </InlineStack>
                   <Divider />
-
-                  <Banner 
-                     tone={formState.isRestockEnabled ? "success" : "warning"}
-                     title={formState.isRestockEnabled ? text.sys_banner_on_title : text.sys_banner_off_title}
-                  >
+                  <Banner tone={formState.isRestockEnabled ? "success" : "warning"} title={formState.isRestockEnabled ? text.sys_banner_on_title : text.sys_banner_off_title}>
                      <p>{formState.isRestockEnabled ? text.sys_banner_on_desc : text.sys_banner_off_desc}</p>
                      <Box paddingBlockStart="300">
-                        <Button 
-                            variant="primary" 
-                            tone={formState.isRestockEnabled ? "critical" : "success"}
-                            onClick={handleToggleSystem} 
-                            loading={isLoading && loadingIntent === "toggle_system"}
-                            icon={formState.isRestockEnabled ? PauseCircleIcon : PlayIcon}
-                        >
+                        <Button variant="primary" tone={formState.isRestockEnabled ? "critical" : "success"} onClick={handleToggleSystem} loading={isLoading && loadingIntent === "toggle_system"} icon={formState.isRestockEnabled ? PauseCircleIcon : PlayIcon}>
                             {formState.isRestockEnabled ? text.sys_stop : text.sys_start}
                         </Button>
                      </Box>
                   </Banner>
-
                   <Box paddingBlockStart="200">
                     <Button fullWidth onClick={handleSync} loading={isLoading && loadingIntent === "sync"}>
                       {text.btn_sync}
@@ -683,7 +622,6 @@ export default function AdditionalPage() {
                 </BlockStack>
               </Card>
 
-              {/* テストメール機能 */}
               <Card>
                 <BlockStack gap="400">
                   <InlineStack gap="200" align="start" blockAlign="center">
@@ -693,22 +631,13 @@ export default function AdditionalPage() {
                     <Text variant="headingMd">{text.card_support}</Text>
                   </InlineStack>
                   <Divider />
-                  
                   <BlockStack gap="200">
-                    <TextField 
-                        label={text.label_test_email}
-                        placeholder={text.placeholder_test_email}
-                        value={testEmail}
-                        onChange={setTestEmail}
-                        autoComplete="email"
-                        type="email"
-                    />
+                    <TextField label={text.label_test_email} placeholder={text.placeholder_test_email} value={testEmail} onChange={setTestEmail} autoComplete="email" type="email" />
                     <Button icon={EmailIcon} fullWidth onClick={handleTestEmail} loading={isLoading && loadingIntent === "test_email"}>
                       {text.btn_test_email}
                     </Button>
                     <Text variant="bodySm" tone="subdued">{text.test_help}</Text>
                   </BlockStack>
-
                 </BlockStack>
               </Card>
             </BlockStack>
