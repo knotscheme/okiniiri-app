@@ -403,17 +403,20 @@
 </script>
 
 {% schema %}
-{ "name": "t:account.name", "target": "section", "settings": [
+{
+  "name": "t:account.name",
+  "target": "section",
+  "settings": [
     { "type": "header", "content": "t:account.header_text" },
-    { "type": "text", "id": "text_title", "label": "t:account.title", "default": "お気に入りリスト" },
-    { "type": "text", "id": "text_desc", "label": "t:account.desc", "default": "あなたが保存した商品の一覧です" },
+    { "type": "text", "id": "text_title", "label": "t:account.title", "default": "t:account.default_title" },
+    { "type": "text", "id": "text_desc", "label": "t:account.desc", "default": "t:account.default_desc" },
     { "type": "select", "id": "header_align", "label": "t:account.align", "options": [
       { "value": "left", "label": "t:account.left" },
       { "value": "center", "label": "t:account.center" },
       { "value": "right", "label": "t:account.right" }
     ], "default": "center" },
-    { "type": "color", "id": "title_color", "label": "t:trigger.text_color", "default": "#121212" },
-    { "type": "color", "id": "desc_color", "label": "t:trigger.text_color", "default": "#666666" },
+    { "type": "color", "id": "title_color", "label": "t:account.title_color", "default": "#121212" },
+    { "type": "color", "id": "desc_color", "label": "t:account.desc_color", "default": "#666666" },
     { "type": "header", "content": "t:account.header_design" },
     { "type": "range", "id": "title_size", "label": "t:account.title_size", "min": 16, "max": 40, "step": 1, "unit": "px", "default": 24 },
     { "type": "select", "id": "title_weight", "label": "t:account.title_weight", "options": [
@@ -421,32 +424,32 @@
       { "value": "bold", "label": "t:account.bold" }
     ], "default": "normal" },
 
-    { "type": "header", "content": "商品カードのデザイン" },
-    { "type": "checkbox", "id": "show_card_preview", "label": "ダミー商品でプレビューを表示", "default": false },
-    { "type": "range", "id": "custom_name_text_size", "label": "商品名のサイズ", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
-    { "type": "select", "id": "name_weight", "label": "商品名の太さ", "options": [ { "value": "normal", "label": "標準" }, { "value": "bold", "label": "太字" } ], "default": "bold" },
-    { "type": "range", "id": "custom_price_text_size", "label": "価格のサイズ", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 },
-    { "type": "select", "id": "price_weight", "label": "価格の太さ", "options": [ { "value": "normal", "label": "標準" }, { "value": "bold", "label": "太字" } ], "default": "normal" },
-    { "type": "color", "id": "card_notify_bg_color", "label": "通知ボタンの背景色", "default": "#ffffff" },
-    { "type": "color", "id": "card_notify_text_color", "label": "通知ボタンの文字色", "default": "#d72c0d" },
-    { "type": "color", "id": "card_notify_border_color", "label": "通知ボタンの枠線色", "default": "#d72c0d" },
+    { "type": "header", "content": "t:account.header_card" },
+    { "type": "checkbox", "id": "show_card_preview", "label": "t:account.show_card_preview", "default": false },
+    { "type": "range", "id": "custom_name_text_size", "label": "t:account.custom_name_text_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 14 },
+    { "type": "select", "id": "name_weight", "label": "t:account.name_weight", "options": [ { "value": "normal", "label": "t:account.normal" }, { "value": "bold", "label": "t:account.bold" } ], "default": "bold" },
+    { "type": "range", "id": "custom_price_text_size", "label": "t:account.custom_price_text_size", "min": 10, "max": 24, "step": 1, "unit": "px", "default": 13 },
+    { "type": "select", "id": "price_weight", "label": "t:account.price_weight", "options": [ { "value": "normal", "label": "t:account.normal" }, { "value": "bold", "label": "t:account.bold" } ], "default": "normal" },
+    { "type": "color", "id": "card_notify_bg_color", "label": "t:account.card_notify_bg_color", "default": "#ffffff" },
+    { "type": "color", "id": "card_notify_text_color", "label": "t:account.card_notify_text_color", "default": "#d72c0d" },
+    { "type": "color", "id": "card_notify_border_color", "label": "t:account.card_notify_border_color", "default": "#d72c0d" },
 
-    { "type": "header", "content": "メールフォームのデザイン" },
-    { "type": "checkbox", "id": "show_email_preview", "label": "プレビューを表示", "default": false },
-    { "type": "checkbox", "id": "modal_glass_effect", "label": "すりガラス効果", "default": true },
-    { "type": "color", "id": "modal_bg_color", "label": "背景色", "default": "#ffffff" },
-    { "type": "range", "id": "modal_bg_opacity", "label": "透明度", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
-    { "type": "color", "id": "modal_text_color", "label": "文字色", "default": "#121212" },
-    { "type": "range", "id": "modal_radius", "label": "角丸", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 },
-    { "type": "color", "id": "modal_btn_bg_color", "label": "ボタン背景色", "default": "#121212" },
-    { "type": "color", "id": "modal_btn_text_color", "label": "ボタン文字色", "default": "#ffffff" },
+    { "type": "header", "content": "t:account.header_email_design" },
+    { "type": "checkbox", "id": "show_email_preview", "label": "t:account.show_email_preview", "default": false },
+    { "type": "checkbox", "id": "modal_glass_effect", "label": "t:account.modal_glass_effect", "default": true },
+    { "type": "color", "id": "modal_bg_color", "label": "t:account.modal_bg_color", "default": "#ffffff" },
+    { "type": "range", "id": "modal_bg_opacity", "label": "t:account.modal_bg_opacity", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
+    { "type": "color", "id": "modal_text_color", "label": "t:account.modal_text_color", "default": "#121212" },
+    { "type": "range", "id": "modal_radius", "label": "t:account.modal_radius", "min": 0, "max": 50, "step": 1, "unit": "px", "default": 12 },
+    { "type": "color", "id": "modal_btn_bg_color", "label": "t:account.modal_btn_bg_color", "default": "#121212" },
+    { "type": "color", "id": "modal_btn_text_color", "label": "t:account.modal_btn_text_color", "default": "#ffffff" },
 
-    { "type": "header", "content": "トースト通知のデザイン" },
-    { "type": "checkbox", "id": "show_toast_preview", "label": "トーストのプレビューを表示", "default": false },
-    { "type": "checkbox", "id": "toast_glass_effect", "label": "すりガラス効果", "default": true },
-    { "type": "color", "id": "toast_bg_color", "label": "背景色", "default": "#121212" },
-    { "type": "range", "id": "toast_bg_opacity", "label": "透明度", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
-    { "type": "color", "id": "toast_text_color", "label": "文字色", "default": "#ffffff" }
+    { "type": "header", "content": "t:account.header_toast" },
+    { "type": "checkbox", "id": "show_toast_preview", "label": "t:account.show_toast_preview", "default": false },
+    { "type": "checkbox", "id": "toast_glass_effect", "label": "t:account.toast_glass_effect", "default": true },
+    { "type": "color", "id": "toast_bg_color", "label": "t:account.toast_bg_color", "default": "#121212" },
+    { "type": "range", "id": "toast_bg_opacity", "label": "t:account.toast_bg_opacity", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 85 },
+    { "type": "color", "id": "toast_text_color", "label": "t:account.toast_text_color", "default": "#ffffff" }
   ] 
 }
 {% endschema %}
