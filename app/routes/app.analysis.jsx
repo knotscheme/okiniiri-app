@@ -764,8 +764,8 @@ export default function AnalysisPage() {
                           }
                           return (
                             <ResponsiveContainer width="100%" height={280}>
-                              <PieChart>
-                                <Pie data={pieData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                              <PieChart margin={{ top: 30, right: 20, bottom: 10, left: 20 }}>
+  <Pie data={pieData} dataKey="total" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
                                   {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.name] || '#B9B9B9'} />)}
                                 </Pie>
                                 <Tooltip />
