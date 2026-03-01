@@ -2,6 +2,7 @@
   --------------------------------------------------------------------------------
   お気に入りリストページ (wishlist-account.liquid)
   ★商品カードのデザインカスタム＆ダミープレビュー機能追加版
+  ★多言語（自動翻訳）判定強化版
   --------------------------------------------------------------------------------
 {%- endcomment -%}
 
@@ -9,92 +10,141 @@
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- case global_lang -%}
-  {%- when 'en' -%}
-    {%- assign lang_title = 'Wishlist' -%}
-    {%- assign lang_desc = 'Products you have saved.' -%}
-    {%- assign lang_empty = 'Your wishlist is currently empty.' -%}
-    {%- assign lang_loading = 'Loading...' -%}
-    {%- assign lang_sold_out = 'Sold Out' -%}
-    {%- assign lang_remove_confirm = 'Remove this item from your wishlist?' -%}
-    {%- assign lang_remove_tooltip = 'Remove' -%}
-    {%- assign lang_notify = 'Notify Me' -%}
-    {%- assign lang_subscribed = 'Notification Set' -%}
-    {%- assign lang_success_reg = 'Notification Registered!' -%}
-    {%- assign lang_success_del = 'Notification Removed' -%}
-    {%- assign lang_email_label = 'Enter email for restock alerts' -%}
-    {%- assign lang_email_placeholder = 'example@email.com' -%}
-    {%- assign lang_submit = 'Register' -%}
-    {%- assign lang_email_error = 'Please enter a valid email address.' -%}
-    {%- assign lang_close = 'Close' -%}
-  {%- when 'zh', 'zh-TW' -%}
-    {%- assign lang_title = '收藏清單' -%}
-    {%- assign lang_desc = '您保存的商品列表。' -%}
-    {%- assign lang_empty = '您的收藏清單目前是空的。' -%}
-    {%- assign lang_loading = '載入中...' -%}
-    {%- assign lang_sold_out = '已售完' -%}
-    {%- assign lang_remove_confirm = '確定要從收藏中刪除嗎？' -%}
-    {%- assign lang_remove_tooltip = '刪除' -%}
-    {%- assign lang_notify = '到貨通知我' -%}
-    {%- assign lang_subscribed = '已訂閱通知' -%}
-    {%- assign lang_success_reg = '已成功訂閱通知！' -%}
-    {%- assign lang_success_del = '已取消通知訂閱' -%}
-    {%- assign lang_email_label = '輸入接收通知的電子郵件' -%}
-    {%- assign lang_email_placeholder = 'example@email.com' -%}
-    {%- assign lang_submit = '提交' -%}
-    {%- assign lang_email_error = '請輸入正確的電子郵件地址。' -%}
-    {%- assign lang_close = '關閉' -%}
-  {%- when 'fr' -%}
-    {%- assign lang_title = 'Liste de souhaits' -%}
-    {%- assign lang_desc = 'Les produits que vous avez enregistrés.' -%}
-    {%- assign lang_empty = 'Votre liste de souhaits est vide.' -%}
-    {%- assign lang_sold_out = 'Épuisé' -%}
-    {%- assign lang_notify = 'M’informer' -%}
-    {%- assign lang_subscribed = 'Notification activée' -%}
-    {%- assign lang_success_reg = 'Notification activée !' -%}
-    {%- assign lang_success_del = 'Notification annulée' -%}
-    {%- assign lang_submit = 'S’inscrire' -%}
-    {%- assign lang_close = 'Fermer' -%}
-  {%- when 'de' -%}
-    {%- assign lang_title = 'Wunschliste' -%}
-    {%- assign lang_desc = 'Ihre gespeicherten Produkte.' -%}
-    {%- assign lang_empty = 'Ihre Wunschliste ist leer.' -%}
-    {%- assign lang_sold_out = 'Ausverkauft' -%}
-    {%- assign lang_notify = 'Benachrichtigen' -%}
-    {%- assign lang_subscribed = 'Benachrichtigung aktiv' -%}
-    {%- assign lang_success_reg = 'Benachrichtigung aktiviert!' -%}
-    {%- assign lang_success_del = 'Benachrichtigung entfernt' -%}
-    {%- assign lang_submit = 'Registrieren' -%}
-    {%- assign lang_close = 'Schließen' -%}
-  {%- when 'es' -%}
-    {%- assign lang_title = 'Lista de deseos' -%}
-    {%- assign lang_desc = 'Productos que has guardado.' -%}
-    {%- assign lang_empty = 'Tu lista de deseos está vacía.' -%}
-    {%- assign lang_sold_out = 'Agotado' -%}
-    {%- assign lang_notify = 'Avisarme' -%}
-    {%- assign lang_subscribed = 'Notificación activa' -%}
-    {%- assign lang_success_reg = '¡Notificación activada!' -%}
-    {%- assign lang_success_del = 'Notificación cancelada' -%}
-    {%- assign lang_submit = 'Registrar' -%}
-    {%- assign lang_close = 'Cerrar' -%}
-  {%- else -%}
-    {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
-    {%- assign lang_desc = block.settings.text_desc | default: 'あなたが保存した商品の一覧です' -%}
-    {%- assign lang_empty = 'お気に入りはまだありません' -%}
-    {%- assign lang_loading = '読み込み中...' -%}
-    {%- assign lang_sold_out = '売り切れ' -%}
-    {%- assign lang_remove_confirm = 'お気に入りから削除しますか？' -%}
-    {%- assign lang_remove_tooltip = '削除する' -%}
-    {%- assign lang_notify = '入荷通知を受け取る' -%}
-    {%- assign lang_subscribed = '入荷通知登録済み' -%}
-    {%- assign lang_success_reg = '入荷通知を登録しました！' -%}
-    {%- assign lang_success_del = '通知登録を解除しました' -%}
-    {%- assign lang_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
-    {%- assign lang_email_placeholder = 'example@email.com' -%}
-    {%- assign lang_submit = '登録する' -%}
-    {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
-    {%- assign lang_close = '閉じる' -%}
-{%- endcase -%}
+{%- comment -%} ★ ここから修正部分（翻訳をオンにする判定を強化） {%- endcomment -%}
+{%- assign val_title = block.settings.text_title | strip -%}
+{%- assign val_desc = block.settings.text_desc | strip -%}
+
+{%- assign use_translation = false -%}
+{%- if val_title == blank or val_title == 'Wishlist' or val_title == 'お気に入りリスト' -%}
+  {%- assign use_translation = true -%}
+{%- elsif val_desc == blank or val_desc == 'Products you have saved.' or val_desc == 'あなたが保存した商品の一覧です' -%}
+  {%- assign use_translation = true -%}
+{%- endif -%}
+{%- comment -%} ★ 修正部分はここまで {%- endcomment -%}
+
+{%- if use_translation -%}
+  {%- case global_lang -%}
+    {%- when 'en' -%}
+      {%- assign lang_title = 'Wishlist' -%}
+      {%- assign lang_desc = 'Products you have saved.' -%}
+      {%- assign lang_empty = 'Your wishlist is currently empty.' -%}
+      {%- assign lang_loading = 'Loading...' -%}
+      {%- assign lang_sold_out = 'Sold Out' -%}
+      {%- assign lang_remove_confirm = 'Remove this item from your wishlist?' -%}
+      {%- assign lang_remove_tooltip = 'Remove' -%}
+      {%- assign lang_notify = 'Notify Me' -%}
+      {%- assign lang_subscribed = 'Notification Set' -%}
+      {%- assign lang_success_reg = 'Notification Registered!' -%}
+      {%- assign lang_success_del = 'Notification Removed' -%}
+      {%- assign lang_email_label = 'Enter email for restock alerts' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = 'Register' -%}
+      {%- assign lang_email_error = 'Please enter a valid email address.' -%}
+      {%- assign lang_close = 'Close' -%}
+    {%- when 'zh', 'zh-TW' -%}
+      {%- assign lang_title = '收藏清單' -%}
+      {%- assign lang_desc = '您保存的商品列表。' -%}
+      {%- assign lang_empty = '您的收藏清單目前是空的。' -%}
+      {%- assign lang_loading = '載入中...' -%}
+      {%- assign lang_sold_out = '已售完' -%}
+      {%- assign lang_remove_confirm = '確定要從收藏中刪除嗎？' -%}
+      {%- assign lang_remove_tooltip = '刪除' -%}
+      {%- assign lang_notify = '到貨通知我' -%}
+      {%- assign lang_subscribed = '已訂閱通知' -%}
+      {%- assign lang_success_reg = '已成功訂閱通知！' -%}
+      {%- assign lang_success_del = '已取消通知訂閱' -%}
+      {%- assign lang_email_label = '輸入接收通知的電子郵件' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = '提交' -%}
+      {%- assign lang_email_error = '請輸入正確的電子郵件地址。' -%}
+      {%- assign lang_close = '關閉' -%}
+    {%- when 'fr' -%}
+      {%- assign lang_title = 'Liste de souhaits' -%}
+      {%- assign lang_desc = 'Les produits que vous avez enregistrés.' -%}
+      {%- assign lang_empty = 'Votre liste de souhaits est vide.' -%}
+      {%- assign lang_loading = 'Chargement...' -%}
+      {%- assign lang_sold_out = 'Épuisé' -%}
+      {%- assign lang_remove_confirm = 'Retirer cet article de votre liste de souhaits ?' -%}
+      {%- assign lang_remove_tooltip = 'Retirer' -%}
+      {%- assign lang_notify = 'M’informer' -%}
+      {%- assign lang_subscribed = 'Notification activée' -%}
+      {%- assign lang_success_reg = 'Notification activée !' -%}
+      {%- assign lang_success_del = 'Notification annulée' -%}
+      {%- assign lang_email_label = 'Entrez votre email pour les alertes de réapprovisionnement' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = 'S’inscrire' -%}
+      {%- assign lang_email_error = 'Veuillez entrer une adresse e-mail valide.' -%}
+      {%- assign lang_close = 'Fermer' -%}
+    {%- when 'de' -%}
+      {%- assign lang_title = 'Wunschliste' -%}
+      {%- assign lang_desc = 'Ihre gespeicherten Produkte.' -%}
+      {%- assign lang_empty = 'Ihre Wunschliste ist leer.' -%}
+      {%- assign lang_loading = 'Laden...' -%}
+      {%- assign lang_sold_out = 'Ausverkauft' -%}
+      {%- assign lang_remove_confirm = 'Diesen Artikel von Ihrer Wunschliste entfernen?' -%}
+      {%- assign lang_remove_tooltip = 'Entfernen' -%}
+      {%- assign lang_notify = 'Benachrichtigen' -%}
+      {%- assign lang_subscribed = 'Benachrichtigung aktiv' -%}
+      {%- assign lang_success_reg = 'Benachrichtigung aktiviert!' -%}
+      {%- assign lang_success_del = 'Benachrichtigung entfernt' -%}
+      {%- assign lang_email_label = 'E-Mail für Benachrichtigungen eingeben' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = 'Registrieren' -%}
+      {%- assign lang_email_error = 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' -%}
+      {%- assign lang_close = 'Schließen' -%}
+    {%- when 'es' -%}
+      {%- assign lang_title = 'Lista de deseos' -%}
+      {%- assign lang_desc = 'Productos que has guardado.' -%}
+      {%- assign lang_empty = 'Tu lista de deseos está vacía.' -%}
+      {%- assign lang_loading = 'Cargando...' -%}
+      {%- assign lang_sold_out = 'Agotado' -%}
+      {%- assign lang_remove_confirm = '¿Eliminar este artículo de tu lista de deseos?' -%}
+      {%- assign lang_remove_tooltip = 'Eliminar' -%}
+      {%- assign lang_notify = 'Avisarme' -%}
+      {%- assign lang_subscribed = 'Notificación activa' -%}
+      {%- assign lang_success_reg = '¡Notificación activada!' -%}
+      {%- assign lang_success_del = 'Notificación cancelada' -%}
+      {%- assign lang_email_label = 'Introduce tu email para avisos de reposición' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = 'Registrar' -%}
+      {%- assign lang_email_error = 'Por favor, introduce un email válido.' -%}
+      {%- assign lang_close = 'Cerrar' -%}
+    {%- else -%}
+      {%- assign lang_title = 'お気に入りリスト' -%}
+      {%- assign lang_desc = 'あなたが保存した商品の一覧です' -%}
+      {%- assign lang_empty = 'お気に入りはまだありません' -%}
+      {%- assign lang_loading = '読み込み中...' -%}
+      {%- assign lang_sold_out = '売り切れ' -%}
+      {%- assign lang_remove_confirm = 'お気に入りから削除しますか？' -%}
+      {%- assign lang_remove_tooltip = '削除する' -%}
+      {%- assign lang_notify = '入荷通知を受け取る' -%}
+      {%- assign lang_subscribed = '入荷通知登録済み' -%}
+      {%- assign lang_success_reg = '入荷通知を登録しました！' -%}
+      {%- assign lang_success_del = '通知登録を解除しました' -%}
+      {%- assign lang_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
+      {%- assign lang_email_placeholder = 'example@email.com' -%}
+      {%- assign lang_submit = '登録する' -%}
+      {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
+      {%- assign lang_close = '閉じる' -%}
+  {%- endcase -%}
+{%- else -%}
+  {%- assign lang_title = block.settings.text_title | default: 'お気に入りリスト' -%}
+  {%- assign lang_desc = block.settings.text_desc | default: 'あなたが保存した商品の一覧です' -%}
+  {%- assign lang_empty = 'お気に入りはまだありません' -%}
+  {%- assign lang_loading = '読み込み中...' -%}
+  {%- assign lang_sold_out = '売り切れ' -%}
+  {%- assign lang_remove_confirm = 'お気に入りから削除しますか？' -%}
+  {%- assign lang_remove_tooltip = '削除する' -%}
+  {%- assign lang_notify = '入荷通知を受け取る' -%}
+  {%- assign lang_subscribed = '入荷通知登録済み' -%}
+  {%- assign lang_success_reg = '入荷通知を登録しました！' -%}
+  {%- assign lang_success_del = '通知登録を解除しました' -%}
+  {%- assign lang_email_label = '入荷通知を受け取るメールアドレスを入力' -%}
+  {%- assign lang_email_placeholder = 'example@email.com' -%}
+  {%- assign lang_submit = '登録する' -%}
+  {%- assign lang_email_error = '正しいメールアドレスを入力してください' -%}
+  {%- assign lang_close = '閉じる' -%}
+{%- endif -%}
 
 <div class="wishlist-modern-container wishlist-container-{{ block.id }}">
   <header class="wishlist-header">

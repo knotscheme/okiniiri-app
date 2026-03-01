@@ -7,14 +7,20 @@
 {%- assign app_setting_lang = shop.metafields.wishflow_settings.language.value -%}
 {%- assign global_lang = app_setting_lang | default: store_lang | default: 'ja' -%}
 
-{%- assign def_add_en = 'Add to Wishlist' -%}
-{%- assign def_add_ja = 'お気に入りに追加' -%}
+{%- comment -%} ★ ここから修正部分（翻訳をオンにする判定を強化しました） {%- endcomment -%}
 {%- assign val_add = block.settings.text_add -%}
-{%- if val_add == blank or val_add == def_add_en or val_add == def_add_ja -%}
+{%- assign val_notify = block.settings.text_notify -%}
+{%- assign val_email_label = block.settings.text_email_label -%}
+
+{%- assign use_translation = false -%}
+{%- if val_add == blank or val_add == 'Add to Wishlist' or val_add == 'お気に入りに追加' -%}
   {%- assign use_translation = true -%}
-{%- else -%}
-  {%- assign use_translation = false -%}
+{%- elsif val_notify == blank or val_notify == 'Notify Me When Available' or val_notify == '入荷通知を受け取る' -%}
+  {%- assign use_translation = true -%}
+{%- elsif val_email_label == blank or val_email_label == 'Enter email for restock alerts' or val_email_label == '入荷通知を受け取るメールアドレスを入力' -%}
+  {%- assign use_translation = true -%}
 {%- endif -%}
+{%- comment -%} ★ 修正部分はここまで {%- endcomment -%}
 
 {%- if use_translation -%}
   {%- case global_lang -%}
@@ -270,7 +276,6 @@
       else { list = list.filter(h => h !== handle); }
       localStorage.setItem('wishflow_guest_list', JSON.stringify(list));
 
-      // 🌟 追加：ゲスト用の安定したIDを発行して記憶させる
       let guestId = localStorage.getItem('wishflow_guest_id');
       if (!guestId) {
         guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
@@ -280,7 +285,6 @@
       try {
         const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
         
-        // LINEなどの流入元を正確に取得
         const urlParams = new URLSearchParams(window.location.search);
         const utmSource = urlParams.get('utm_source');
         let finalReferrer = document.referrer;
@@ -290,9 +294,9 @@
         await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            customerId: CUSTOMER_ID || guestId, // 会員ID、またはゲストIDを送信
+            customerId: CUSTOMER_ID || guestId,
             productHandle: handle, 
-            mode: isActive ? 'add' : 'delete', // 👈 明確に追加か削除かを伝える
+            mode: isActive ? 'add' : 'delete',
             referrer: finalReferrer
           })
         });
@@ -365,7 +369,6 @@
       const wishlistText = document.getElementById(`wishlist-text-${PRODUCT_HANDLE}`);
 
       if (window.Shopify && window.Shopify.designMode) {
-        // 🌟【編集画面用】過去の履歴を無視し、チェックボックスのON/OFFを強制する
         if (notifyBtn) {
           notifyBtn.style.display = 'flex';
           if ({{ block.settings.show_active_preview_notify | json }}) {
@@ -386,7 +389,6 @@
           }
         }
       } else {
-        // 🌟【本番環境用】在庫状況とユーザーの保存データを元に正しく表示する（通常動作）
         if (notifyBtn) {
           const isAvailable = {{ product.available | json }};
           notifyBtn.style.display = isAvailable ? 'none' : 'flex';
