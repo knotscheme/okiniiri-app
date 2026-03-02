@@ -256,6 +256,17 @@
     const BLOCK_ID = "{{ block.id }}";
     const NOTIFY_KEY = 'restock_notification_list'; 
 
+    // ▼▼▼ 追加：最初にお店に来たときの「看板」をスマホに保存 ▼▼▼
+    if (!sessionStorage.getItem('wishflow_original_referrer')) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      let initialRef = document.referrer || "Direct";
+      if (utmSource) initialRef = "utm_source=" + utmSource;
+      sessionStorage.getItem('wishflow_original_referrer'); // ※念のため
+      sessionStorage.setItem('wishflow_original_referrer', initialRef);
+    }
+    // ▲▲▲ 追加ここまで ▲▲▲
+
     function getDesignSettings() {
       const el = document.getElementById(`wishlist-config-${BLOCK_ID}`);
       try { return JSON.parse(el.textContent); } catch (e) { return {}; }
@@ -363,7 +374,7 @@
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: sessionStorage.getItem('wishflow_original_referrer') || window.location.href })
         });
       } catch (e) { console.error("Notify sync failed:", e); }
     }
