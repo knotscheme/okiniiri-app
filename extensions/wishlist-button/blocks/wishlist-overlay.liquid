@@ -60,6 +60,30 @@
 
 <script>
   (function() {
+    // ▼▼▼ 追加：お店に入った「1歩目」で必ずメモ帳に書き込む最強ロジック ▼▼▼
+    if (!sessionStorage.getItem('wishflow_original_referrer')) {
+      try {
+        var ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
+        var urlParams = new URLSearchParams(window.location.search);
+        var initialRef = "Direct";
+        var utm = urlParams.get('utm_source');
+        if (utm) { initialRef = utm.toLowerCase(); }
+        else if (ua.indexOf('line') > -1) { initialRef = 'line'; }
+        else if (ua.indexOf('instagram') > -1) { initialRef = 'instagram'; }
+        else if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) { initialRef = 'facebook'; }
+        else {
+          var ref = document.referrer ? document.referrer.toLowerCase() : "";
+          if (ref.indexOf('line.me') > -1) { initialRef = 'line'; }
+          else if (ref.indexOf('instagram.com') > -1) { initialRef = 'instagram'; }
+          else if (ref && ref.indexOf(window.location.hostname) === -1) { initialRef = ref; }
+        }
+        sessionStorage.setItem('wishflow_original_referrer', initialRef);
+      } catch (e) {
+        sessionStorage.setItem('wishflow_original_referrer', "Direct");
+      }
+    }
+    // ▲▲▲ 追加ここまで ▲▲▲
+
     const pageType = {{ request.page_type | json }};
     // 商品ページ自体や既にコンテナがある場合は二重動作を防ぐため終了
     if (pageType === 'product' || document.querySelector('.wishlist-modern-container')) return;
@@ -67,37 +91,8 @@
     const CUSTOMER_ID = "{{ customer.id }}";
     const STORAGE_KEY = 'wishflow_guest_list';
 
-    // 🌟 【超強化版＋回遊トラッキング完全対応】LINE・インスタを自動判別し、保存する関数
     function getWishflowReferrer() {
-      try {
-        // 1. もしすでに「魔法のスタンプ（最初の看板）」を持っていたら、それを最優先で返す！
-        const savedReferrer = sessionStorage.getItem('wishflow_original_referrer');
-        if (savedReferrer) return savedReferrer;
-
-        // 2. スタンプを持っていない場合（お店に来た直後）は、今まで通り判別する
-        const ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
-        const urlParams = new URLSearchParams(window.location.search);
-        let currentRef = "Direct";
-        
-        const utm = urlParams.get('utm_source');
-        if (utm) { currentRef = utm.toLowerCase(); }
-        else if (ua.indexOf('line') > -1) { currentRef = 'line'; }
-        else if (ua.indexOf('instagram') > -1) { currentRef = 'instagram'; }
-        else if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) { currentRef = 'facebook'; }
-        else {
-          const ref = document.referrer ? document.referrer.toLowerCase() : "";
-          if (ref.indexOf('line.me') > -1) { currentRef = 'line'; }
-          else if (ref.indexOf('instagram.com') > -1) { currentRef = 'instagram'; }
-          else if (ref && ref.indexOf(window.location.hostname) === -1) { currentRef = ref; }
-        }
-
-        // 3. 判別した結果を「魔法のスタンプ」としてスマホに保存し、絶対に忘れないようにする！
-        sessionStorage.setItem('wishflow_original_referrer', currentRef);
-        return currentRef;
-
-      } catch (e) {
-        return "Direct";
-      }
+      return sessionStorage.getItem('wishflow_original_referrer') || "Direct";
     }
 
     function getSafeList() {

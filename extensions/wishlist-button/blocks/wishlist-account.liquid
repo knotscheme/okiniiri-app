@@ -240,6 +240,29 @@
 
 <script>
   (function() {
+    // ▼▼▼ 追加：お店に入った「1歩目」で必ずメモ帳に書き込む最強ロジック ▼▼▼
+    if (!sessionStorage.getItem('wishflow_original_referrer')) {
+      try {
+        var ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
+        var urlParams = new URLSearchParams(window.location.search);
+        var initialRef = "Direct";
+        var utm = urlParams.get('utm_source');
+        if (utm) { initialRef = utm.toLowerCase(); }
+        else if (ua.indexOf('line') > -1) { initialRef = 'line'; }
+        else if (ua.indexOf('instagram') > -1) { initialRef = 'instagram'; }
+        else if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) { initialRef = 'facebook'; }
+        else {
+          var ref = document.referrer ? document.referrer.toLowerCase() : "";
+          if (ref.indexOf('line.me') > -1) { initialRef = 'line'; }
+          else if (ref.indexOf('instagram.com') > -1) { initialRef = 'instagram'; }
+          else if (ref && ref.indexOf(window.location.hostname) === -1) { initialRef = ref; }
+        }
+        sessionStorage.setItem('wishflow_original_referrer', initialRef);
+      } catch (e) {
+        sessionStorage.setItem('wishflow_original_referrer', "Direct");
+      }
+    }
+    // ▲▲▲ 追加ここまで ▲▲▲
     const STORAGE_KEY = 'wishflow_guest_list';
     const NOTIFY_STORAGE_KEY = 'restock_notification_list';
     const CUSTOMER_ID = "{{ customer.id }}";
@@ -331,7 +354,7 @@
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: window.location.href })
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: sessionStorage.getItem('wishflow_original_referrer') || "Direct" })
         });
       } catch (e) { console.error("Sync failed:", e); }
     }

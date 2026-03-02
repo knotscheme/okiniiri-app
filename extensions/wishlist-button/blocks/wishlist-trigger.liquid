@@ -301,19 +301,13 @@
       try {
         const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const utmSource = urlParams.get('utm_source');
-        let finalReferrer = document.referrer;
-        if (utmSource) finalReferrer = utmSource;
-        else if (!finalReferrer) finalReferrer = "Direct";
-
         await fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             customerId: CUSTOMER_ID || guestId,
             productHandle: handle, 
             mode: isActive ? 'add' : 'delete',
-            referrer: finalReferrer
+            referrer: sessionStorage.getItem('wishflow_original_referrer') || "Direct"
           })
         });
       } catch (e) { console.error("Wishlist sync failed:", e); }
@@ -374,7 +368,7 @@
       try {
         await fetch(`${rootPath}apps/wishlist/notify`.replace('//', '/'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: sessionStorage.getItem('wishflow_original_referrer') || window.location.href })
+          body: JSON.stringify({ productHandle: handle, variantId: variantId, customerEmail: email, actionType: isRegistered ? 'delete' : 'create', referrer: sessionStorage.getItem('wishflow_original_referrer') || "Direct" })
         });
       } catch (e) { console.error("Notify sync failed:", e); }
     }
