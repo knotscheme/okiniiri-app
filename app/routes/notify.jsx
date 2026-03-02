@@ -24,7 +24,7 @@ export const action = async ({ request }) => {
     
     // 2. データの取得
     const data = await request.json().catch(() => ({}));
-    const { productHandle, variantId, customerEmail, actionType } = data;
+    const { productHandle, variantId, customerEmail, actionType, referrer } = data;
     const url = new URL(request.url);
     const shop = session?.shop || url.searchParams.get("shop") || data.shop;
 
@@ -61,14 +61,14 @@ export const action = async ({ request }) => {
     if (!existing) {
       // 🌟【手順1】全くの新規、または在庫復活通知が完了した後の「再登録」
       await db.restockRequest.create({
-        data: { shop, productHandle, variantId: safeVariantId, customerEmail, isNotified: false, referrer: "" }
+        data: { shop, productHandle, variantId: safeVariantId, customerEmail, isNotified: false, referrer: referrer || "" }
       });
       shouldSendConfirmEmail = true; // 初回（またはリセット後）なのでメール送る
     } else if (existing.referrer === "UNSUBSCRIBED") {
       // 🌟【手順3】解除中だった人の「復活登録」
       await db.restockRequest.update({
         where: { id: existing.id },
-        data: { referrer: "" } // 目印を消して有効化
+        data: { referrer: referrer || "" } // 目印を消して有効化
       });
       shouldSendConfirmEmail = false; // ★解除からの再登録なのでメールは送らない
     } else {
