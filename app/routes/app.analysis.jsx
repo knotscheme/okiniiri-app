@@ -182,10 +182,10 @@ export const loader = async ({ request }) => {
     return txt.other;
   };
 
+  // サーバーでは時間を加工せず、そのままのデータをフロントに投げる
   const formatDateTime = (dObj) => {
     if (!dObj) return "";
-    const d = new Date(dObj);
-    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return new Date(dObj).toISOString(); 
   };
 
   const rawDetailedData = [
@@ -564,6 +564,14 @@ export default function AnalysisPage() {
     rawDetailedData.forEach(d => {
       const row = keys.map(key => {
         let val = d[key];
+
+        // ▼▼ ここでブラウザ（各国のPC）の現地時間に自動変換！ ▼▼
+        if ((key === 'date' || key === 'convertedAt') && val && val !== "-") {
+          const bTime = new Date(val); // ブラウザが現地時間を自動で計算
+          val = `${bTime.getFullYear()}/${String(bTime.getMonth() + 1).padStart(2, '0')}/${String(bTime.getDate()).padStart(2, '0')} ${String(bTime.getHours()).padStart(2, '0')}:${String(bTime.getMinutes()).padStart(2, '0')}`;
+        }
+        // ▲▲ ここまで ▲▲
+
         if (key === 'variantId' || key === 'userId') val = `'${val}`;
         return val || "";
       });
