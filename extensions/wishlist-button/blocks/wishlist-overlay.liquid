@@ -67,34 +67,36 @@
     const CUSTOMER_ID = "{{ customer.id }}";
     const STORAGE_KEY = 'wishflow_guest_list';
 
-    // 🌟 【超強化版】LINE・インスタを自動判別する関数
+    // 🌟 【超強化版＋回遊トラッキング完全対応】LINE・インスタを自動判別し、保存する関数
     function getWishflowReferrer() {
       try {
-        // すべて小文字に変換して、大文字・小文字のブレ（Line, LINE, line）を許さない
+        // 1. もしすでに「魔法のスタンプ（最初の看板）」を持っていたら、それを最優先で返す！
+        const savedReferrer = sessionStorage.getItem('wishflow_original_referrer');
+        if (savedReferrer) return savedReferrer;
+
+        // 2. スタンプを持っていない場合（お店に来た直後）は、今まで通り判別する
         const ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
         const urlParams = new URLSearchParams(window.location.search);
+        let currentRef = "Direct";
         
-        // 1. URLのutm_sourceがあれば最優先（店長さんが仕込んだ確実なリンク用）
         const utm = urlParams.get('utm_source');
-        if (utm) return utm.toLowerCase();
-        
-        // 2. ブラウザの身分証（User Agent）から自動判別
-        if (ua.indexOf('line') > -1) return 'line';
-        if (ua.indexOf('instagram') > -1) return 'instagram';
-        if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) return 'facebook';
-        
-        // 3. 足跡（Referrer）から自動判別
-        // 身分証を隠していても「どこから来たか」に line.me があればLINE確定
-        const ref = document.referrer ? document.referrer.toLowerCase() : "";
-        if (ref.indexOf('line.me') > -1) return 'line';
-        if (ref.indexOf('instagram.com') > -1) return 'instagram';
-        
-        // 4. 上記のどれでもなければ、通常の足跡（URL）を送る
-        if (ref && ref.indexOf(window.location.hostname) === -1) return ref;
-        
-        return "Direct";
+        if (utm) { currentRef = utm.toLowerCase(); }
+        else if (ua.indexOf('line') > -1) { currentRef = 'line'; }
+        else if (ua.indexOf('instagram') > -1) { currentRef = 'instagram'; }
+        else if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) { currentRef = 'facebook'; }
+        else {
+          const ref = document.referrer ? document.referrer.toLowerCase() : "";
+          if (ref.indexOf('line.me') > -1) { currentRef = 'line'; }
+          else if (ref.indexOf('instagram.com') > -1) { currentRef = 'instagram'; }
+          else if (ref && ref.indexOf(window.location.hostname) === -1) { currentRef = ref; }
+        }
+
+        // 3. 判別した結果を「魔法のスタンプ」としてスマホに保存し、絶対に忘れないようにする！
+        sessionStorage.setItem('wishflow_original_referrer', currentRef);
+        return currentRef;
+
       } catch (e) {
-        return "Direct"; // エラー時は安全にDirectを返す
+        return "Direct";
       }
     }
 
