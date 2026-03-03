@@ -160,16 +160,23 @@
           else if (!list.includes(handle)) list.push(handle);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 
-          // 🌟 【重要修正】分析のために会員・ゲスト問わずAPIを叩く
+          // ▼▼ 重複防止：IDを固定するロジックを追加 ▼▼
+          let guestId = localStorage.getItem('wishflow_guest_id');
+          if (!guestId) {
+            guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+            localStorage.setItem('wishflow_guest_id', guestId);
+          }
+          // ▲▲ 修正ここまで ▲▲
+
           const rootPath = window.Shopify ? window.Shopify.routes.root : '/';
           fetch(`${rootPath}apps/wishlist/api/wishlist`.replace('//', '/'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              customerId: CUSTOMER_ID || "guest_" + (Math.random().toString(36).substring(2, 10)), // ゲストID生成
+              customerId: CUSTOMER_ID || guestId, // 👈 固定したIDを渡す
               productHandle: handle, 
               mode: isActive ? 'delete' : 'add',
-              referrer: getWishflowReferrer() // 👈 ここでLINE判別結果を送る
+              referrer: getWishflowReferrer()
             })
           }).catch(err => console.error("Wishflow API Error:", err));
 

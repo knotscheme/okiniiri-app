@@ -256,16 +256,29 @@
     const BLOCK_ID = "{{ block.id }}";
     const NOTIFY_KEY = 'restock_notification_list'; 
 
-    // ▼▼▼ 追加：最初にお店に来たときの「看板」をスマホに保存 ▼▼▼
+    // ▼▼▼ 修正：流入元判定をoverlayと完全に統一（最強ロジック） ▼▼▼
     if (!sessionStorage.getItem('wishflow_original_referrer')) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const utmSource = urlParams.get('utm_source');
-      let initialRef = document.referrer || "Direct";
-      if (utmSource) initialRef = "utm_source=" + utmSource;
-      sessionStorage.getItem('wishflow_original_referrer'); // ※念のため
-      sessionStorage.setItem('wishflow_original_referrer', initialRef);
+      try {
+        var ua = (navigator.userAgent || navigator.vendor || window.opera).toLowerCase();
+        var urlParams = new URLSearchParams(window.location.search);
+        var initialRef = "Direct";
+        var utm = urlParams.get('utm_source');
+        if (utm) { initialRef = utm.toLowerCase(); }
+        else if (ua.indexOf('line') > -1) { initialRef = 'line'; }
+        else if (ua.indexOf('instagram') > -1) { initialRef = 'instagram'; }
+        else if (ua.indexOf('fban') > -1 || ua.indexOf('fbav') > -1) { initialRef = 'facebook'; }
+        else {
+          var ref = document.referrer ? document.referrer.toLowerCase() : "";
+          if (ref.indexOf('line.me') > -1) { initialRef = 'line'; }
+          else if (ref.indexOf('instagram.com') > -1) { initialRef = 'instagram'; }
+          else if (ref && ref.indexOf(window.location.hostname) === -1) { initialRef = ref; }
+        }
+        sessionStorage.setItem('wishflow_original_referrer', initialRef);
+      } catch (e) {
+        sessionStorage.setItem('wishflow_original_referrer', "Direct");
+      }
     }
-    // ▲▲▲ 追加ここまで ▲▲▲
+    // ▲▲▲ 修正ここまで ▲▲▲
 
     function getDesignSettings() {
       const el = document.getElementById(`wishlist-config-${BLOCK_ID}`);
@@ -294,7 +307,7 @@
 
       let guestId = localStorage.getItem('wishflow_guest_id');
       if (!guestId) {
-        guestId = 'guest_' + Math.random().toString(36).substr(2, 9);
+        guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
         localStorage.setItem('wishflow_guest_id', guestId);
       }
 
