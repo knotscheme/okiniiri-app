@@ -154,7 +154,10 @@ export default function Index() {
       // ★ 追加：ロック画面用のテキスト
       pro_lock_title: "Proプランで詳細な分析を解放",
       pro_lock_desc: "どの商品が最もお気に入りされているか、入荷通知の需要が高いかを可視化できます。",
-      btn_upgrade: "アップグレードする"
+      btn_upgrade: "アップグレードする",
+      usage_title: "メール配信ステータス",
+      usage_sent: "{sent} / {limit} 通送信済み",
+      usage_remaining: "残り {remaining} 通"
     },
     en: {
       title: "Dashboard",
@@ -186,7 +189,9 @@ export default function Index() {
       feedback_title: "Feedback & Support", feedback_desc: "Help us improve. Feel free to reach out if you need assistance.", btn_feedback: "Contact Support",
       pro_lock_title: "Unlock Advanced Analytics with Pro",
       pro_lock_desc: "Visualize which products are most favorited and in high demand.",
-      btn_upgrade: "Upgrade Now"
+      btn_upgrade: "Upgrade Now",usage_title: "Email Usage Status",
+      usage_sent: "{sent} / {limit} emails sent",
+      usage_remaining: "{remaining} remaining"
     },
     zh: {
       title: "仪表板",
@@ -218,7 +223,10 @@ export default function Index() {
       feedback_title: "反馈与支持", feedback_desc: "帮助我们改进应用。如果您需要帮助，请随时联系我们。", btn_feedback: "联系支持",
       pro_lock_title: "升级 Pro 解锁高级分析",
       pro_lock_desc: "可视化哪些产品最受欢迎以及需求量最大。",
-      btn_upgrade: "立即升级"
+      btn_upgrade: "立即升级",
+      usage_title: "邮件发送状态",
+      usage_sent: "已发送 {sent} / {limit} 封",
+      usage_remaining: "剩余 {remaining} 封"
     },
     fr: {
       title: "Tableau de bord",
@@ -250,7 +258,10 @@ export default function Index() {
       feedback_title: "Commentaires & Support", feedback_desc: "Aidez-nous à nous améliorer. Contactez-nous si vous avez besoin d'aide.", btn_feedback: "Contacter le support",
       pro_lock_title: "Débloquez l'analyse avancée avec Pro",
       pro_lock_desc: "Visualisez quels produits sont les plus favoris et très demandés.",
-      btn_upgrade: "Mettre à niveau"
+      btn_upgrade: "Mettre à niveau",
+      usage_title: "Statut des e-mails",
+      usage_sent: "{sent} / {limit} e-mails envoyés",
+      usage_remaining: "{remaining} restants"
     },
     de: {
       title: "Dashboard",
@@ -282,7 +293,9 @@ export default function Index() {
       feedback_title: "Feedback & Support", feedback_desc: "Helfen Sie uns bei der Verbesserung. Kontaktieren Sie uns bei Bedarf.", btn_feedback: "Support kontaktieren",
       pro_lock_title: "Erweiterte Analysen mit Pro freischalten",
       pro_lock_desc: "Visualisieren Sie, welche Produkte am beliebtesten und am meisten gefragt sind.",
-      btn_upgrade: "Jetzt upgraden"
+      btn_upgrade: "Jetzt upgraden",usage_title: "E-Mail-Status",
+      usage_sent: "{sent} / {limit} E-Mails gesendet",
+      usage_remaining: "{remaining} übrig"
     },
     es: {
       title: "Panel",
@@ -314,7 +327,10 @@ export default function Index() {
       feedback_title: "Comentarios y Soporte", feedback_desc: "Ayúdenos a mejorar. Contáctenos si necesita ayuda.", btn_feedback: "Contactar a soporte",
       pro_lock_title: "Desbloquea análisis avanzados con Pro",
       pro_lock_desc: "Visualice qué productos son los más deseados y tienen mayor demanda.",
-      btn_upgrade: "Actualizar ahora"
+      btn_upgrade: "Actualizar ahora",
+      usage_title: "Estado de envío",
+      usage_sent: "{sent} / {limit} correos enviados",
+      usage_remaining: "{remaining} restantes"
     }
   };
 
@@ -339,6 +355,16 @@ export default function Index() {
   const currentPlanName = appUsage?.isFounder 
     ? "Founder" 
     : (appUsage?.plan ? appUsage.plan.charAt(0).toUpperCase() + appUsage.plan.slice(1) : "Free");
+
+// --- メール配信状況の計算ロジックを追加 ---
+  const sentCount = appUsage?.sentCount || 0; // 実際におくられた数
+  // プランごとの上限設定
+  const planLimit = appUsage?.isFounder || appUsage?.plan === "pro" || appUsage?.plan === "standard" 
+    ? 10000  // Standard/Pro/Founderは目安として10,000通
+    : 50;    // Freeプランは50通
+  
+  const remainingCount = Math.max(0, planLimit - sentCount);
+  const usageProgress = Math.min(100, (sentCount / planLimit) * 100);
 
   const guideSteps = [
     { step: "1", title: text.step1, desc: text.desc1, image: "/images/step1.png" },
@@ -581,6 +607,32 @@ export default function Index() {
                   </BlockStack>
                 </BlockStack>
               </Card>
+
+              {/* ▼ メール配信状況カードを追加 ▼ */}
+              <Card>
+                <BlockStack gap="300">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '20px', display: 'flex' }}><Icon source={EmailIcon} tone="base" /></div>
+                    <Text variant="headingMd">{text.usage_title}</Text>
+                  </div>
+                  
+                  <BlockStack gap="100">
+                    <InlineStack align="space-between">
+                      <Text variant="bodySm" tone="subdued">
+                        {text.usage_sent.replace("{sent}", sentCount).replace("{limit}", planLimit.toLocaleString())}
+                      </Text>
+                      <Text variant="bodySm" fontWeight="bold">
+                        {Math.round(usageProgress)}%
+                      </Text>
+                    </InlineStack>
+                    <ProgressBar progress={usageProgress} size="small" tone={usageProgress > 90 ? "critical" : "primary"} />
+                    <Text variant="bodyXs" tone="subdued" alignment="end">
+                      {text.usage_remaining.replace("{remaining}", remainingCount.toLocaleString())}
+                    </Text>
+                  </BlockStack>
+                </BlockStack>
+              </Card>
+
 
               <Card>
                 <BlockStack gap="400">
