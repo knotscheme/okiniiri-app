@@ -13,9 +13,14 @@ dev_store_url = "shirakawa-2.myshopify.com"
 [webhooks]
 api_version = "2026-04"
 
+customer_data_request_url = "https://okiniiri-app.onrender.com/webhooks"
+customer_redact_url = "https://okiniiri-app.onrender.com/webhooks"
+shop_redact_url = "https://okiniiri-app.onrender.com/webhooks"
+
   [[webhooks.subscriptions]]
   topics = [ "inventory_levels/update", "orders/create" ]
   uri = "/webhooks"
+
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -25,11 +30,10 @@ scopes = "read_customers,read_inventory,read_orders,read_products,write_customer
 redirect_urls = [
   "https://okiniiri-app.onrender.com/auth/callback",
   "https://okiniiri-app.onrender.com/auth/shopify/callback",
-  "https://okiniiri-app.onrender.com/api/auth/callback" 
+  "https://okiniiri-app.onrender.com/api/auth/callback"
 ]
 
 [app_proxy]
 url = "https://okiniiri-app.onrender.com"
 subpath = "wishlist"
 prefix = "apps"
-
